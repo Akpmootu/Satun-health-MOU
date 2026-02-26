@@ -13,6 +13,50 @@ interface DashboardProps {
 
 const COLORS = ['#10b981', '#f43f5e', '#f59e0b', '#3b82f6', '#8b5cf6'];
 
+// Custom Tooltip for PieChart
+const CustomPieTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white p-3 rounded-xl shadow-lg border border-slate-100 text-sm">
+        <p className="font-semibold text-slate-800 mb-1">{payload[0].name}</p>
+        <p className="text-slate-600">จำนวน: <span className="font-bold" style={{ color: payload[0].payload.color }}>{payload[0].value}</span> ตัวชี้วัด</p>
+      </div>
+    );
+  }
+  return null;
+};
+
+// Custom Tooltip for RadarChart
+const CustomRadarTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white p-3 rounded-xl shadow-lg border border-slate-100 text-sm">
+        <p className="font-semibold text-slate-800 mb-1">พื้นที่: {label}</p>
+        <p className="text-slate-600">คะแนนเฉลี่ย: <span className="font-bold text-emerald-600">{payload[0].value.toFixed(2)}</span> / 5.00</p>
+      </div>
+    );
+  }
+  return null;
+};
+
+// Custom Tooltip for BarChart
+const CustomBarTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white p-3 rounded-xl shadow-lg border border-slate-100 text-sm min-w-[150px]">
+        <p className="font-semibold text-slate-800 mb-2 border-b border-slate-100 pb-1">พื้นที่: {label}</p>
+        {payload.map((entry: any, index: number) => (
+          <div key={index} className="flex justify-between items-center gap-4 mb-1">
+            <span className="text-slate-500" style={{ color: entry.color }}>{entry.name}:</span>
+            <span className="font-bold text-slate-700">{entry.value}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
 export function Dashboard({ data, fiscalYear, timeframe }: DashboardProps) {
   const filteredData = useMemo(() => data.filter(d => d.fiscal_year === fiscalYear), [data, fiscalYear]);
 
@@ -92,7 +136,7 @@ export function Dashboard({ data, fiscalYear, timeframe }: DashboardProps) {
         <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
         <h3 className="text-3xl font-bold text-slate-800 tracking-tight">{value}</h3>
       </div>
-      <div className={cn("p-3 rounded-xl", colorClass)}>
+      <div className={cn("p-3 rounded-xl", colorClass, "group-hover:scale-110 transition-transform")}>
         <Icon size={24} className="text-white" />
       </div>
     </motion.div>
@@ -143,14 +187,13 @@ export function Dashboard({ data, fiscalYear, timeframe }: DashboardProps) {
                   outerRadius={80}
                   paddingAngle={5}
                   dataKey="value"
+                  animationDuration={1000}
                 >
                   {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                    <Cell key={`cell-${index}`} fill={entry.color} className="hover:opacity-80 transition-opacity cursor-pointer outline-none" />
                   ))}
                 </Pie>
-                <RechartsTooltip 
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}
-                />
+                <RechartsTooltip content={<CustomPieTooltip />} />
                 <Legend verticalAlign="bottom" height={36} iconType="circle" />
               </PieChart>
             </ResponsiveContainer>
@@ -174,8 +217,8 @@ export function Dashboard({ data, fiscalYear, timeframe }: DashboardProps) {
                 <PolarGrid stroke="#e2e8f0" />
                 <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 12 }} />
                 <PolarRadiusAxis angle={30} domain={[0, 5]} tick={{ fill: '#94a3b8' }} />
-                <Radar name="คะแนนเฉลี่ย" dataKey="A" stroke="#10b981" fill="#10b981" fillOpacity={0.3} />
-                <RechartsTooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }} />
+                <Radar name="คะแนนเฉลี่ย" dataKey="A" stroke="#10b981" fill="#10b981" fillOpacity={0.3} animationDuration={1000} />
+                <RechartsTooltip content={<CustomRadarTooltip />} />
               </RadarChart>
             </ResponsiveContainer>
           </div>
@@ -195,10 +238,10 @@ export function Dashboard({ data, fiscalYear, timeframe }: DashboardProps) {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <RechartsTooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }} />
+                <RechartsTooltip cursor={{ fill: '#f8fafc' }} content={<CustomBarTooltip />} />
                 <Legend iconType="circle" />
-                <Bar dataKey="ผ่าน" stackId="a" fill="#10b981" radius={[0, 0, 4, 4]} />
-                <Bar dataKey="ไม่ผ่าน" stackId="a" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="ผ่าน" stackId="a" fill="#10b981" radius={[0, 0, 4, 4]} animationDuration={1000} className="hover:opacity-80 transition-opacity cursor-pointer" />
+                <Bar dataKey="ไม่ผ่าน" stackId="a" fill="#f43f5e" radius={[4, 4, 0, 0]} animationDuration={1000} className="hover:opacity-80 transition-opacity cursor-pointer" />
               </BarChart>
             </ResponsiveContainer>
           </div>

@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Indicator, AREAS } from '../../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Edit2, Search, Filter, Plus, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { Edit2, Search, Filter, Plus, CheckCircle2, XCircle, Clock, ArrowUpDown } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import Swal from 'sweetalert2';
 
@@ -12,14 +12,52 @@ interface IndicatorsListProps {
   onEdit: (indicator: Indicator) => void;
 }
 
+type SortOption = 'order' | 'name' | 'score';
+
 export function IndicatorsList({ data, fiscalYear, timeframe, onEdit }: IndicatorsListProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedArea, setSelectedArea] = useState<string>('ระดับจังหวัด');
+  const [statusFilter, setStatusFilter] = useState<string>('ทั้งหมด');
+  const [sortBy, setSortBy] = useState<SortOption>('order');
 
-  const filteredData = data.filter(d => 
-    d.fiscal_year === fiscalYear && 
-    (d.name.toLowerCase().includes(searchTerm.toLowerCase()) || d.order.toString().includes(searchTerm))
-  );
+  const filteredAndSortedData = useMemo(() => {
+    let result = data.filter(d => d.fiscal_year === fiscalYear);
+
+    // Filter by search term
+    if (searchTerm) {
+      result = result.filter(d => 
+        d.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        d.order.toString().includes(searchTerm)
+      );
+    }
+
+    // Filter by status
+    if (statusFilter !== 'ทั้งหมด') {
+      result = result.filter(d => {
+        const res = d.results[timeframe]?.[selectedArea];
+        const status = res?.status || 'รอประเมิน';
+        return status === statusFilter;
+      });
+    }
+
+    // Sort
+    result.sort((a, b) => {
+      if (sortBy === 'order') {
+        const orderA = parseFloat(a.order.toString()) || 0;
+        const orderB = parseFloat(b.order.toString()) || 0;
+        return orderA - orderB;
+      } else if (sortBy === 'name') {
+        return a.name.localeCompare(b.name, 'th');
+      } else if (sortBy === 'score') {
+        const scoreA = a.results[timeframe]?.[selectedArea]?.score ?? -1;
+        const scoreB = b.results[timeframe]?.[selectedArea]?.score ?? -1;
+        return scoreB - scoreA; // Descending score
+      }
+      return 0;
+    });
+
+    return result;
+  }, [data, fiscalYear, timeframe, selectedArea, searchTerm, statusFilter, sortBy]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -63,8 +101,8 @@ export function IndicatorsList({ data, fiscalYear, timeframe, onEdit }: Indicato
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         {/* Toolbar */}
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4 justify-between bg-slate-50/50">
-          <div className="relative w-full sm:w-72">
+        <div className="p-4 border-b border-slate-100 flex flex-col lg:flex-row gap-4 justify-between bg-slate-50/50">
+          <div className="relative w-full lg:w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input 
               type="text" 
@@ -75,17 +113,46 @@ export function IndicatorsList({ data, fiscalYear, timeframe, onEdit }: Indicato
             />
           </div>
           
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Filter size={18} className="text-slate-400 hidden sm:block" />
-            <select 
-              value={selectedArea}
-              onChange={(e) => setSelectedArea(e.target.value)}
-              className="w-full sm:w-auto px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all cursor-pointer appearance-none pr-10 relative"
-            >
-              {AREAS.map(area => (
-                <option key={area} value={area}>แสดงผล: {area}</option>
-              ))}
-            </select>
+          <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+            <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5">
+              <Filter size={16} className="text-slate-400" />
+              <select 
+                value={selectedArea}
+                onChange={(e) => setSelectedArea(e.target.value)}
+                className="bg-transparent text-sm focus:outline-none cursor-pointer appearance-none pr-4"
+              >
+                {AREAS.map(area => (
+                  <option key={area} value={area}>{area}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5">
+              <span className="text-sm text-slate-500">สถานะ:</span>
+              <select 
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="bg-transparent text-sm focus:outline-none cursor-pointer appearance-none pr-4 font-medium"
+              >
+                <option value="ทั้งหมด">ทั้งหมด</option>
+                <option value="ผ่าน" className="text-emerald-600">ผ่าน</option>
+                <option value="ไม่ผ่าน" className="text-rose-600">ไม่ผ่าน</option>
+                <option value="รอประเมิน" className="text-amber-600">รอประเมิน</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5">
+              <ArrowUpDown size={16} className="text-slate-400" />
+              <select 
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                className="bg-transparent text-sm focus:outline-none cursor-pointer appearance-none pr-4"
+              >
+                <option value="order">เรียงตามลำดับ</option>
+                <option value="name">เรียงตามชื่อ (ก-ฮ)</option>
+                <option value="score">เรียงตามคะแนน (มากไปน้อย)</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -105,15 +172,15 @@ export function IndicatorsList({ data, fiscalYear, timeframe, onEdit }: Indicato
             </thead>
             <tbody className="text-sm divide-y divide-slate-100">
               <AnimatePresence>
-                {filteredData.length > 0 ? (
-                  filteredData.map((item, index) => {
+                {filteredAndSortedData.length > 0 ? (
+                  filteredAndSortedData.map((item, index) => {
                     const result = item.results[timeframe]?.[selectedArea] || { target: '-', result_percentage: '-', score: '-', status: 'รอประเมิน' };
                     return (
                       <motion.tr 
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95 }}
-                        transition={{ duration: 0.2, delay: index * 0.05 }}
+                        transition={{ duration: 0.2, delay: Math.min(index * 0.05, 0.5) }}
                         key={item.id} 
                         className="hover:bg-slate-50/80 transition-colors group"
                       >
@@ -150,7 +217,7 @@ export function IndicatorsList({ data, fiscalYear, timeframe, onEdit }: Indicato
                 ) : (
                   <tr>
                     <td colSpan={7} className="p-8 text-center text-slate-500">
-                      ไม่พบข้อมูลตัวชี้วัด
+                      ไม่พบข้อมูลตัวชี้วัดที่ตรงกับเงื่อนไข
                     </td>
                   </tr>
                 )}

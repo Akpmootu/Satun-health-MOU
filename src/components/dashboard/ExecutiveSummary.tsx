@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
-import { Indicator } from '../../types';
+import { Indicator, TIMEFRAMES } from '../../types';
 import { motion } from 'motion/react';
 import { AlertTriangle, CheckCircle2, Target, TrendingUp, Activity, Award } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, LineChart, Line, YAxis } from 'recharts';
 import { cn } from '../../lib/utils';
 
 interface ExecutiveSummaryProps {
@@ -51,6 +51,18 @@ export function ExecutiveSummary({ data, fiscalYear, timeframe }: ExecutiveSumma
     { name: 'ผ่าน', value: metrics.successRate, color: '#10b981' },
     { name: 'ไม่ผ่าน/รอประเมิน', value: 100 - metrics.successRate, color: '#f1f5f9' }
   ];
+
+  // Helper to generate trend data for a specific indicator across quarters
+  const getTrendData = (indicator: Indicator) => {
+    const quarters = ['ไตรมาส 1 (ต.ค.-ธ.ค.)', 'ไตรมาส 2 (ม.ค.-มี.ค.)', 'ไตรมาส 3 (เม.ย.-มิ.ย.)', 'ไตรมาส 4 (ก.ค.-ก.ย.)'];
+    return quarters.map(q => {
+      const val = indicator.results[q]?.['ระดับจังหวัด']?.result_percentage;
+      return {
+        name: q,
+        value: val !== undefined && val !== null ? val : 0
+      };
+    });
+  };
 
   const StatCard = ({ title, value, subtitle, icon: Icon, colorClass, delay }: any) => (
     <motion.div
@@ -154,6 +166,8 @@ export function ExecutiveSummary({ data, fiscalYear, timeframe }: ExecutiveSumma
             {metrics.criticalIndicators.length > 0 ? (
               metrics.criticalIndicators.map((ind, idx) => {
                 const res = ind.results[timeframe]?.['ระดับจังหวัด'];
+                const trendData = getTrendData(ind);
+                
                 return (
                   <div key={ind.id} className="p-4 rounded-xl border border-rose-100 bg-rose-50/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-rose-50/50 transition-colors">
                     <div className="flex-1">
@@ -163,15 +177,28 @@ export function ExecutiveSummary({ data, fiscalYear, timeframe }: ExecutiveSumma
                       </div>
                       <p className="text-sm font-medium text-slate-800 line-clamp-2">{ind.name}</p>
                     </div>
-                    <div className="flex items-center gap-6 shrink-0 bg-white px-4 py-2 rounded-lg border border-rose-100">
-                      <div className="text-center">
-                        <p className="text-xs text-slate-500 mb-0.5">เป้าหมาย</p>
-                        <p className="text-sm font-semibold text-slate-700">{ind.target_criteria}</p>
+                    
+                    <div className="flex items-center gap-4 shrink-0">
+                      {/* Mini Trend Chart */}
+                      <div className="w-24 h-12 bg-white rounded border border-rose-100 p-1 hidden sm:block">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={trendData}>
+                            <YAxis domain={[0, 100]} hide />
+                            <Line type="monotone" dataKey="value" stroke="#f43f5e" strokeWidth={2} dot={{ r: 2, fill: '#f43f5e' }} isAnimationActive={false} />
+                          </LineChart>
+                        </ResponsiveContainer>
                       </div>
-                      <div className="w-px h-8 bg-slate-200"></div>
-                      <div className="text-center">
-                        <p className="text-xs text-slate-500 mb-0.5">ผลงาน</p>
-                        <p className="text-sm font-bold text-rose-600">{res?.result_percentage ?? '-'}</p>
+
+                      <div className="flex items-center gap-4 bg-white px-4 py-2 rounded-lg border border-rose-100">
+                        <div className="text-center">
+                          <p className="text-xs text-slate-500 mb-0.5">เป้าหมาย</p>
+                          <p className="text-sm font-semibold text-slate-700">{ind.target_criteria}</p>
+                        </div>
+                        <div className="w-px h-8 bg-slate-200"></div>
+                        <div className="text-center">
+                          <p className="text-xs text-slate-500 mb-0.5">ผลงาน</p>
+                          <p className="text-sm font-bold text-rose-600">{res?.result_percentage ?? '-'}</p>
+                        </div>
                       </div>
                     </div>
                   </div>
