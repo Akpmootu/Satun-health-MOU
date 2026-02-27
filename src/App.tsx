@@ -6,17 +6,30 @@ import { ExecutiveSummary } from './components/dashboard/ExecutiveSummary';
 import { Dashboard } from './components/dashboard/Dashboard';
 import { IndicatorsList } from './components/dashboard/IndicatorsList';
 import { IndicatorForm } from './components/dashboard/IndicatorForm';
+import { WelcomePage } from './components/landing/WelcomePage';
+import { LoadingScreen } from './components/common/LoadingScreen';
 import { MOCK_DATA } from './data/mockData';
 import { Indicator, TIMEFRAMES } from './types';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [view, setView] = useState<'landing' | 'app'>('landing');
+  
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState('executive');
   const [fiscalYear, setFiscalYear] = useState('2569');
   const [timeframe, setTimeframe] = useState(TIMEFRAMES[0]); // Default to 'ภาพรวม (สะสม)'
   const [data, setData] = useState<Indicator[]>(MOCK_DATA);
   const [editingIndicator, setEditingIndicator] = useState<Indicator | null>(null);
+
+  useEffect(() => {
+    // Simulate initial loading
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Auto-close sidebar on mobile
   useEffect(() => {
@@ -41,6 +54,19 @@ export default function App() {
     );
   };
 
+  const handleEnterApp = (tab: string) => {
+    setActiveTab(tab);
+    setView('app');
+  };
+
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+
+  if (view === 'landing') {
+    return <WelcomePage onEnterApp={handleEnterApp} />;
+  }
+
   return (
     <div className="flex min-h-screen bg-slate-50/50 font-sans text-slate-900 selection:bg-emerald-200 selection:text-emerald-900">
       <Sidebar 
@@ -48,6 +74,7 @@ export default function App() {
         setIsOpen={setIsSidebarOpen} 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
+        onGoHome={() => setView('landing')}
       />
       
       <div className="flex-1 flex flex-col min-w-0 transition-all duration-300">

@@ -7,9 +7,10 @@ interface SidebarProps {
   setIsOpen: (isOpen: boolean) => void;
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  onGoHome: () => void;
 }
 
-export function Sidebar({ isOpen, setIsOpen, activeTab, setActiveTab }: SidebarProps) {
+export function Sidebar({ isOpen, setIsOpen, activeTab, setActiveTab, onGoHome }: SidebarProps) {
   const menuItems = [
     { id: 'executive', label: 'ผู้บริหาร (Executive)', icon: Briefcase },
     { id: 'dashboard', label: 'ภาพรวม (Dashboard)', icon: Home },
@@ -42,19 +43,26 @@ export function Sidebar({ isOpen, setIsOpen, activeTab, setActiveTab }: SidebarP
           !isOpen && "-translate-x-full lg:translate-x-0"
         )}
       >
-        <div className="flex items-center justify-between h-16 px-4 border-b border-slate-100">
+        <div className="flex items-center justify-between h-20 px-4 border-b border-slate-100">
           <div className={cn("flex items-center gap-3 overflow-hidden", !isOpen && "lg:justify-center")}>
-            <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center shrink-0">
-              <span className="text-white font-bold text-lg">S</span>
-            </div>
+            <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 shrink-0">
+              <rect width="40" height="40" rx="10" fill="url(#logo-grad-sidebar)" />
+              <path d="M12 20L18 26L28 14" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+              <defs>
+                <linearGradient id="logo-grad-sidebar" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#10b981" />
+                  <stop offset="1" stopColor="#0d9488" />
+                </linearGradient>
+              </defs>
+            </svg>
             {isOpen && (
-              <motion.span 
+              <motion.div 
                 initial={{ opacity: 0 }} 
                 animate={{ opacity: 1 }} 
-                className="font-semibold text-slate-800 whitespace-nowrap"
+                className="flex flex-col whitespace-nowrap"
               >
-                Satun Health
-              </motion.span>
+                <span className="font-bold text-slate-800 text-sm leading-tight">STN Health <span className="text-emerald-600">KPI</span></span>
+              </motion.div>
             )}
           </div>
           <button 
@@ -67,6 +75,24 @@ export function Sidebar({ isOpen, setIsOpen, activeTab, setActiveTab }: SidebarP
         </div>
 
         <div className="flex-1 py-6 flex flex-col gap-2 px-3 overflow-y-auto">
+          {/* Home Button */}
+          <button
+            onClick={onGoHome}
+            className={cn(
+              "flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 mb-4",
+              "text-slate-500 hover:bg-slate-50 hover:text-slate-800",
+              !isOpen && "lg:justify-center"
+            )}
+            title="หน้าแรก"
+          >
+            <Home size={20} className="shrink-0" />
+            {isOpen && <span className="font-medium whitespace-nowrap">หน้าแรก</span>}
+          </button>
+
+          <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-3">
+            {isOpen ? 'เมนูหลัก' : 'เมนู'}
+          </div>
+
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;

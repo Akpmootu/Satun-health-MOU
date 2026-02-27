@@ -1,5 +1,5 @@
 {
-  "name": "Satun Health MOU",
-  "description": "ระบบประเมินผลการดำเนินงานตามตัวชี้วัด MOU สาธารณสุขจังหวัดสตูล",
+  "name": "STN Health KPI",
+  "description": "ระบบสนับสนุนการติดตามตัวชี้วัดการดำเนินงาน สำนักงานสาธารณสุขจังหวัดสตูล",
   "requestFramePermissions": []
 }
