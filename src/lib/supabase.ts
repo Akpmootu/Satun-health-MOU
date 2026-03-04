@@ -28,7 +28,7 @@ import { createClient } from '@supabase/supabase-js';
 */
 // ----------------------------------------------------------------------
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://uryrxpnzgajuwtaugnwp.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_4fmxhwEX_jQH3YIhAYPDcw_mjLYirxS';
+const supabaseUrl = 'https://huaqbvyobtvwtctekpua.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh1YXFidnlvYnR2d3RjdGVrcHVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1ODM3MTQsImV4cCI6MjA4ODE1OTcxNH0.6TLbymrCItp5pbA--HzxHLI9AjYmqePnMpLkvTHcEvs';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);

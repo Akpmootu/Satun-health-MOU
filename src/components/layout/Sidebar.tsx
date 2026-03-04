@@ -1,6 +1,7 @@
-import { Menu, X, Home, BarChart2, FileText, Settings, LogOut, Briefcase } from 'lucide-react';
+import { Menu, X, Home, BarChart2, FileText, Settings, LogOut, Briefcase, Users, LayoutDashboard, Edit3 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
+import { User } from '../../types';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -8,15 +9,33 @@ interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   onGoHome: () => void;
+  user: User | null;
+  onLogout: () => void;
 }
 
-export function Sidebar({ isOpen, setIsOpen, activeTab, setActiveTab, onGoHome }: SidebarProps) {
-  const menuItems = [
-    { id: 'executive', label: 'ผู้บริหาร (Executive)', icon: Briefcase },
-    { id: 'dashboard', label: 'ภาพรวม (Dashboard)', icon: Home },
-    { id: 'indicators', label: 'ตัวชี้วัด MOU', icon: BarChart2 },
-    { id: 'reports', label: 'รายงานผล', icon: FileText },
-    { id: 'settings', label: 'ตั้งค่าระบบ', icon: Settings },
+export function Sidebar({ isOpen, setIsOpen, activeTab, setActiveTab, onGoHome, user, onLogout }: SidebarProps) {
+  const menuGroups = [
+    {
+      title: 'ส่วนระบบ',
+      items: [
+        { id: 'home', label: 'หน้าแรก', icon: Home, action: onGoHome },
+        ...(user?.role === 'admin' ? [{ id: 'users', label: 'จัดการผู้ใช้งาน', icon: Users }] : [])
+      ]
+    },
+    {
+      title: 'ส่วนแดชบอร์ด',
+      items: [
+        { id: 'executive', label: 'ผู้บริหาร (Executive)', icon: Briefcase },
+        { id: 'dashboard', label: 'ภาพรวม (Dashboard)', icon: LayoutDashboard },
+      ]
+    },
+    {
+      title: 'ส่วนลงข้อมูล',
+      items: [
+        { id: 'indicators', label: 'ตัวชี้วัด MOU', icon: Edit3 },
+        ...(user?.role === 'admin' ? [{ id: 'verify', label: 'ตรวจสอบข้อมูล', icon: FileText }] : [])
+      ]
+    }
   ];
 
   return (
@@ -74,62 +93,66 @@ export function Sidebar({ isOpen, setIsOpen, activeTab, setActiveTab, onGoHome }
           </button>
         </div>
 
-        <div className="flex-1 py-6 flex flex-col gap-2 px-3 overflow-y-auto">
-          {/* Home Button */}
-          <button
-            onClick={onGoHome}
-            className={cn(
-              "flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 mb-4",
-              "text-slate-500 hover:bg-slate-50 hover:text-slate-800",
-              !isOpen && "lg:justify-center"
-            )}
-            title="หน้าแรก"
-          >
-            <Home size={20} className="shrink-0" />
-            {isOpen && <span className="font-medium whitespace-nowrap">หน้าแรก</span>}
-          </button>
-
-          <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-3">
-            {isOpen ? 'เมนูหลัก' : 'เมนู'}
-          </div>
-
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setActiveTab(item.id);
-                  if (window.innerWidth < 1024) setIsOpen(false);
-                }}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group relative",
-                  isActive 
-                    ? "bg-emerald-50 text-emerald-700" 
-                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
-                  !isOpen && "lg:justify-center"
-                )}
-                aria-label={item.label}
-              >
-                <Icon size={20} className={cn("shrink-0", isActive ? "text-emerald-600" : "text-slate-400 group-hover:text-slate-600")} />
-                {isOpen && (
-                  <span className="font-medium whitespace-nowrap">{item.label}</span>
-                )}
-                
-                {/* Tooltip for collapsed state */}
-                {!isOpen && (
-                  <div className="absolute left-full ml-2 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 hidden lg:block">
-                    {item.label}
-                  </div>
-                )}
-              </button>
-            );
-          })}
+        <div className="flex-1 py-6 flex flex-col gap-6 px-3 overflow-y-auto hide-scrollbar">
+          {menuGroups.map((group, groupIdx) => (
+            <div key={groupIdx} className="flex flex-col gap-2">
+              <div className={cn(
+                "text-xs font-semibold text-slate-400 uppercase tracking-wider px-3",
+                !isOpen && "text-center text-[10px]"
+              )}>
+                {isOpen ? group.title : group.title.replace('ส่วน', '')}
+              </div>
+              
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      if (item.action) {
+                        item.action();
+                      } else {
+                        setActiveTab(item.id);
+                      }
+                      if (window.innerWidth < 1024) setIsOpen(false);
+                    }}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group relative",
+                      isActive && !item.action
+                        ? "bg-emerald-50 text-emerald-700" 
+                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+                      !isOpen && "lg:justify-center"
+                    )}
+                    aria-label={item.label}
+                  >
+                    <Icon size={20} className={cn("shrink-0", isActive && !item.action ? "text-emerald-600" : "text-slate-400 group-hover:text-slate-600")} />
+                    {isOpen && (
+                      <span className="font-medium whitespace-nowrap">{item.label}</span>
+                    )}
+                    
+                    {/* Tooltip for collapsed state */}
+                    {!isOpen && (
+                      <div className="absolute left-full ml-2 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 hidden lg:block">
+                        {item.label}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
         </div>
 
         <div className="p-4 border-t border-slate-100">
+          {isOpen && user && (
+            <div className="mb-4 px-3">
+              <p className="text-sm font-bold text-slate-800 truncate">{user.username}</p>
+              <p className="text-xs text-slate-500 truncate">{user.unit}</p>
+            </div>
+          )}
           <button 
+            onClick={onLogout}
             className={cn(
               "flex items-center gap-3 px-3 py-3 rounded-xl text-red-600 hover:bg-red-50 transition-all w-full",
               !isOpen && "lg:justify-center"

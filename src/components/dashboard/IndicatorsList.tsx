@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
-import { Indicator, AREAS } from '../../types';
+import { useState, useMemo, useEffect } from 'react';
+import { Indicator, AREAS, User } from '../../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Edit2, Search, Filter, Plus, CheckCircle2, XCircle, Clock, ArrowUpDown } from 'lucide-react';
+import { Edit2, Search, Filter, Plus, CheckCircle2, XCircle, Clock, ArrowUpDown, Info, ChevronDown, ChevronUp, ShieldCheck, AlertCircle } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import Swal from 'sweetalert2';
 
@@ -10,15 +10,27 @@ interface IndicatorsListProps {
   fiscalYear: string;
   timeframe: string;
   onEdit: (indicator: Indicator) => void;
+  onVerify?: (indicator: Indicator, area: string, status: 'ผ่าน' | 'ไม่ผ่าน' | 'รอประเมิน' | 'รอยืนยัน' | 'แก้ไข', feedback?: string) => void;
+  onAddMaster?: () => void;
+  onEditMaster?: (indicator: Indicator) => void;
+  onDeleteMaster?: (id: string) => void;
+  user: User | null;
 }
 
 type SortOption = 'order' | 'name' | 'score';
 
-export function IndicatorsList({ data, fiscalYear, timeframe, onEdit }: IndicatorsListProps) {
+export function IndicatorsList({ data, fiscalYear, timeframe, onEdit, onVerify, onAddMaster, onEditMaster, onDeleteMaster, user }: IndicatorsListProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedArea, setSelectedArea] = useState<string>('ระดับจังหวัด');
+  const [selectedArea, setSelectedArea] = useState<string>('จังหวัด');
   const [statusFilter, setStatusFilter] = useState<string>('ทั้งหมด');
   const [sortBy, setSortBy] = useState<SortOption>('order');
+  const [showInfo, setShowInfo] = useState(false);
+
+  useEffect(() => {
+    if (user && user.role === 'user') {
+      setSelectedArea(user.unit);
+    }
+  }, [user]);
 
   const filteredAndSortedData = useMemo(() => {
     let result = data.filter(d => d.fiscal_year === fiscalYear);
@@ -63,6 +75,8 @@ export function IndicatorsList({ data, fiscalYear, timeframe, onEdit }: Indicato
     switch (status) {
       case 'ผ่าน': return <CheckCircle2 size={16} className="text-emerald-500" />;
       case 'ไม่ผ่าน': return <XCircle size={16} className="text-rose-500" />;
+      case 'รอยืนยัน': return <ShieldCheck size={16} className="text-indigo-500" />;
+      case 'แก้ไข': return <AlertCircle size={16} className="text-orange-500" />;
       default: return <Clock size={16} className="text-amber-500" />;
     }
   };
@@ -71,33 +85,166 @@ export function IndicatorsList({ data, fiscalYear, timeframe, onEdit }: Indicato
     switch (status) {
       case 'ผ่าน': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       case 'ไม่ผ่าน': return 'bg-rose-50 text-rose-700 border-rose-200';
+      case 'รอยืนยัน': return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+      case 'แก้ไข': return 'bg-orange-50 text-orange-700 border-orange-200';
       default: return 'bg-amber-50 text-amber-700 border-amber-200';
     }
+  };
+
+  const getExcellenceCategory = (order: string | number) => {
+    const num = parseFloat(order.toString());
+    if ([1, 2, 3, 4, 6, 9].includes(num)) {
+      return { name: 'PP Excellence', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' };
+    } else if ([7.1, 7.2, 8, 10, 11, 13, 15].includes(num)) {
+      return { name: 'Service Excellence', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' };
+    } else if ([12].includes(num)) {
+      return { name: 'People Excellence', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' };
+    } else if ([5, 14, 16, 17].includes(num)) {
+      return { name: 'Governance Excellence', color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200' };
+    }
+    return { name: 'ทั่วไป', color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200' };
+  };
+
+  const getScoreStyle = (score: number | null | undefined) => {
+    if (score === null || score === undefined || isNaN(score)) return {};
+    const hue = Math.max(0, Math.min(120, (score - 1) * 30));
+    return { backgroundColor: `hsl(${hue}, 80%, 95%)`, color: `hsl(${hue}, 80%, 35%)`, borderColor: `hsl(${hue}, 80%, 85%)` };
   };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800 tracking-tight">จัดการตัวชี้วัด MOU</h2>
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-2xl font-bold text-slate-800 tracking-tight">จัดการตัวชี้วัด MOU</h2>
+            <button 
+              onClick={() => setShowInfo(!showInfo)}
+              className={cn(
+                "flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full transition-all duration-200 border",
+                showInfo 
+                  ? "bg-indigo-50 text-indigo-700 border-indigo-200 shadow-sm" 
+                  : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-200"
+              )}
+              aria-label="แสดงความหมายของ 4+1 Excellence"
+            >
+              <Info size={16} />
+              <span className="font-medium">4+1 Excellence</span>
+              {showInfo ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            </button>
+          </div>
           <p className="text-slate-500 mt-1">บันทึกและแก้ไขผลการดำเนินงาน ปีงบประมาณ {fiscalYear} | รอบ: <span className="font-semibold text-emerald-600">{timeframe}</span></p>
         </div>
-        <button 
-          className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-medium flex items-center gap-2 transition-colors shadow-sm shadow-emerald-600/20"
-          onClick={() => {
-            Swal.fire({
-              title: 'เพิ่มตัวชี้วัดใหม่',
-              text: 'ฟังก์ชันนี้กำลังอยู่ระหว่างการพัฒนา',
-              icon: 'info',
-              confirmButtonText: 'ตกลง',
-              confirmButtonColor: '#10b981'
-            });
-          }}
-        >
-          <Plus size={18} />
-          <span>เพิ่มตัวชี้วัด</span>
-        </button>
+        {user?.role === 'admin' && (
+          <button 
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-medium flex items-center gap-2 transition-colors shadow-sm shadow-emerald-600/20"
+            onClick={() => {
+              Swal.fire({
+                title: 'เพิ่มตัวชี้วัดใหม่',
+                text: 'ฟังก์ชันนี้กำลังอยู่ระหว่างการพัฒนา',
+                icon: 'info',
+                confirmButtonText: 'ตกลง',
+                confirmButtonColor: '#10b981'
+              });
+            }}
+          >
+            <Plus size={18} />
+            <span>เพิ่มตัวชี้วัด</span>
+          </button>
+        )}
       </div>
+
+      <AnimatePresence>
+        {showInfo && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+            <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-100/50 rounded-2xl p-5 shadow-sm">
+              <h3 className="text-indigo-800 font-bold mb-4 flex items-center gap-2 text-lg">
+                <Info size={20} className="text-indigo-600" />
+                หมายเหตุ: ความหมายของ 4+1 Excellence
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* PP Excellence */}
+                <div className="bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-white/50 hover:shadow-md transition-shadow">
+                  <h4 className="font-bold text-emerald-700 mb-1 flex items-center gap-2">
+                    <span className="bg-emerald-100 text-emerald-800 w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
+                    PP Excellence
+                  </h4>
+                  <p className="text-emerald-600/80 text-xs mb-2 font-medium">(ส่งเสริมสุขภาพ ป้องกันโรค และคุ้มครองผู้บริโภคเป็นเลิศ)</p>
+                  <p className="text-slate-700 text-sm mb-3 italic bg-emerald-50/50 p-2 rounded-lg border border-emerald-100/50">
+                    "เน้นการสร้างเสริมสุขภาพ การคัดกรองโรค และการจัดการปัจจัยเสี่ยง"
+                  </p>
+                  <ul className="text-slate-600 text-sm space-y-1.5 list-none">
+                    <li className="flex gap-2"><span className="text-emerald-500 font-bold">(1)</span> <span>ร้อยละหญิงตั้งครรภ์ได้รับการฝากครรภ์ครั้งแรกก่อนหรือเท่ากับ 12 สัปดาห์</span></li>
+                    <li className="flex gap-2"><span className="text-emerald-500 font-bold">(2)</span> <span>ร้อยละเด็กอายุครบ 12 เดือนในเขตรับผิดชอบ มีภาวะโลหิตจาง</span></li>
+                    <li className="flex gap-2"><span className="text-emerald-500 font-bold">(3)</span> <span>ร้อยละของเด็กปฐมวัยมีพัฒนาการสมวัย</span></li>
+                    <li className="flex gap-2"><span className="text-emerald-500 font-bold">(4)</span> <span>อัตราเด็กอายุ 0 - 5 ปี ฟันดีไม่มีผุ (Cavity Free)</span></li>
+                    <li className="flex gap-2"><span className="text-emerald-500 font-bold">(6)</span> <span>ระดับความสำเร็จของการดำเนินงานอาหารปลอดภัยจังหวัด</span></li>
+                    <li className="flex gap-2"><span className="text-emerald-500 font-bold">(9)</span> <span>ร้อยละการคัดกรองวัณโรคโดยการ CXR ทรวงอกในกลุ่มเสี่ยง</span></li>
+                  </ul>
+                </div>
+                
+                {/* Service Excellence */}
+                <div className="bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-white/50 hover:shadow-md transition-shadow">
+                  <h4 className="font-bold text-blue-700 mb-1 flex items-center gap-2">
+                    <span className="bg-blue-100 text-blue-800 w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span>
+                    Service Excellence
+                  </h4>
+                  <p className="text-blue-600/80 text-xs mb-2 font-medium">(บริการเป็นเลิศ)</p>
+                  <p className="text-slate-700 text-sm mb-3 italic bg-blue-50/50 p-2 rounded-lg border border-blue-100/50">
+                    "เน้นคุณภาพการรักษาพยาบาล ระบบส่งต่อ ระบบบริการปฐมภูมิ และการแพทย์ทางเลือก"
+                  </p>
+                  <ul className="text-slate-600 text-sm space-y-1.5 list-none">
+                    <li className="flex gap-2"><span className="text-blue-500 font-bold">(7.1, 7.2)</span> <span>ผู้ป่วยเบาหวานชนิดที่ 2 ที่เข้าเกณฑ์และเข้าสู่ระยะสงบ (DM remission)</span></li>
+                    <li className="flex gap-2"><span className="text-blue-500 font-bold">(8)</span> <span>ร้อยละของผู้ป่วยยาเสพติดเข้าสู่กระบวนการบำบัดรักษาฯ (Retention Rate)</span></li>
+                    <li className="flex gap-2"><span className="text-blue-500 font-bold">(10)</span> <span>อัตราความสำเร็จการรักษาผู้ป่วยวัณโรคปอดรายใหม่</span></li>
+                    <li className="flex gap-2"><span className="text-blue-500 font-bold">(11)</span> <span>ร้อยละของหน่วยบริการปฐมภูมิที่ผ่านเกณฑ์คุณภาพมาตรฐาน (พ.ร.บ. ปฐมภูมิฯ)</span></li>
+                    <li className="flex gap-2"><span className="text-blue-500 font-bold">(13)</span> <span>ร้อยละการให้บริการการแพทย์ทางไกล (Telemedicine) ใน รพ.สต.</span></li>
+                    <li className="flex gap-2"><span className="text-blue-500 font-bold">(15)</span> <span>มูลค่าการใช้ยาสมุนไพรในสิทธิ UC</span></li>
+                  </ul>
+                </div>
+
+                {/* People Excellence */}
+                <div className="bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-white/50 hover:shadow-md transition-shadow">
+                  <h4 className="font-bold text-amber-700 mb-1 flex items-center gap-2">
+                    <span className="bg-amber-100 text-amber-800 w-6 h-6 rounded-full flex items-center justify-center text-xs">3</span>
+                    People Excellence
+                  </h4>
+                  <p className="text-amber-600/80 text-xs mb-2 font-medium">(บุคลากรเป็นเลิศ)</p>
+                  <p className="text-slate-700 text-sm mb-3 italic bg-amber-50/50 p-2 rounded-lg border border-amber-100/50">
+                    "เน้นการพัฒนาศักยภาพบุคลากรทางการแพทย์ และเครือข่ายสุขภาพภาคประชาชน"
+                  </p>
+                  <ul className="text-slate-600 text-sm space-y-1.5 list-none">
+                    <li className="flex gap-2"><span className="text-amber-500 font-bold">(12)</span> <span>ร้อยละของ อสม. ได้รับการพัฒนายกระดับสู่ผู้ช่วยสาธารณสุข ปี 2569</span></li>
+                  </ul>
+                </div>
+
+                {/* Governance Excellence */}
+                <div className="bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-white/50 hover:shadow-md transition-shadow">
+                  <h4 className="font-bold text-purple-700 mb-1 flex items-center gap-2">
+                    <span className="bg-purple-100 text-purple-800 w-6 h-6 rounded-full flex items-center justify-center text-xs">4</span>
+                    Governance Excellence
+                  </h4>
+                  <p className="text-purple-600/80 text-xs mb-2 font-medium">(บริหารจัดการเป็นเลิศ)</p>
+                  <p className="text-slate-700 text-sm mb-3 italic bg-purple-50/50 p-2 rounded-lg border border-purple-100/50">
+                    "เน้นการบริหารจัดการระบบข้อมูล สุขาภิบาลสิ่งแวดล้อม การเงินการคลัง และธรรมาภิบาล"
+                  </p>
+                  <ul className="text-slate-600 text-sm space-y-1.5 list-none">
+                    <li className="flex gap-2"><span className="text-purple-500 font-bold">(5)</span> <span>การพัฒนาอนามัยสิ่งแวดล้อมตามเกณฑ์ GREEN & CLEAN Hospital Challenge / Sub-District</span></li>
+                    <li className="flex gap-2"><span className="text-purple-500 font-bold">(14)</span> <span>ระดับความสำเร็จของ คปสอ. ในการขับเคลื่อนงานสุขภาพดิจิทัล</span></li>
+                    <li className="flex gap-2"><span className="text-purple-500 font-bold">(16)</span> <span>ร้อยละของการเบิกจ่ายงบค่าเสื่อมของเครือข่ายโรงพยาบาล (ตัวชี้วัดผู้บริหาร)</span></li>
+                    <li className="flex gap-2"><span className="text-purple-500 font-bold">(17)</span> <span>ร้อยละของหน่วยงานในสังกัดผ่านการประเมินความโปร่งใส ITA (ตัวชี้วัดผู้บริหาร)</span></li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         {/* Toolbar */}
@@ -119,7 +266,8 @@ export function IndicatorsList({ data, fiscalYear, timeframe, onEdit }: Indicato
               <select 
                 value={selectedArea}
                 onChange={(e) => setSelectedArea(e.target.value)}
-                className="bg-transparent text-sm focus:outline-none cursor-pointer appearance-none pr-4"
+                disabled={user?.role !== 'admin'}
+                className="bg-transparent text-sm focus:outline-none cursor-pointer appearance-none pr-4 disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 {AREAS.map(area => (
                   <option key={area} value={area}>{area}</option>
@@ -153,6 +301,16 @@ export function IndicatorsList({ data, fiscalYear, timeframe, onEdit }: Indicato
                 <option value="score">เรียงตามคะแนน (มากไปน้อย)</option>
               </select>
             </div>
+
+            {user?.role === 'admin' && onAddMaster && (
+              <button
+                onClick={onAddMaster}
+                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors shadow-sm shadow-emerald-600/20"
+              >
+                <Plus size={16} />
+                <span>เพิ่มตัวชี้วัด</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -166,6 +324,7 @@ export function IndicatorsList({ data, fiscalYear, timeframe, onEdit }: Indicato
                 <th className="p-4 w-32 text-center">เป้าหมาย</th>
                 <th className="p-4 w-32 text-center">ผลงาน (%)</th>
                 <th className="p-4 w-24 text-center">คะแนน</th>
+                <th className="p-4 w-32 text-center">ถ่วงน้ำหนัก</th>
                 <th className="p-4 w-32 text-center">สถานะ</th>
                 <th className="p-4 w-24 text-center">จัดการ</th>
               </tr>
@@ -174,7 +333,7 @@ export function IndicatorsList({ data, fiscalYear, timeframe, onEdit }: Indicato
               <AnimatePresence>
                 {filteredAndSortedData.length > 0 ? (
                   filteredAndSortedData.map((item, index) => {
-                    const result = item.results[timeframe]?.[selectedArea] || { target: '-', result_percentage: '-', score: '-', status: 'รอประเมิน' };
+                    const result = item.results[timeframe]?.[selectedArea] || { target: '-', result_percentage: '-', score: '-', weighted_score: '-', status: 'รอประเมิน' };
                     return (
                       <motion.tr 
                         initial={{ opacity: 0, y: 10 }}
@@ -187,36 +346,86 @@ export function IndicatorsList({ data, fiscalYear, timeframe, onEdit }: Indicato
                         <td className="p-4 text-center font-medium text-slate-500">{item.order}</td>
                         <td className="p-4">
                           <p className="text-slate-800 font-medium line-clamp-2 group-hover:line-clamp-none transition-all">{item.name}</p>
-                          <p className="text-xs text-slate-400 mt-1">{item.responsible_group}</p>
+                          <div className="flex items-center gap-2 mt-1.5">
+                            <span className={cn("text-xs font-semibold px-2 py-0.5 rounded-md border", getExcellenceCategory(item.order).bg, getExcellenceCategory(item.order).color, getExcellenceCategory(item.order).border)}>
+                              {getExcellenceCategory(item.order).name}
+                            </span>
+                          </div>
                         </td>
                         <td className="p-4 text-center text-slate-600">{result.target ?? '-'}</td>
                         <td className="p-4 text-center font-medium text-slate-700">{result.result_percentage ?? '-'}</td>
                         <td className="p-4 text-center">
-                          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-700 font-bold">
+                          <span 
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-700 font-bold border border-transparent"
+                            style={getScoreStyle(result.score as number)}
+                          >
                             {result.score ?? '-'}
                           </span>
+                        </td>
+                        <td className="p-4 text-center font-medium text-emerald-600">
+                          {result.weighted_score ?? '-'}
                         </td>
                         <td className="p-4 text-center">
                           <div className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium", getStatusClass(result.status))}>
                             {getStatusIcon(result.status)}
                             <span>{result.status}</span>
                           </div>
+                          {result.feedback && (
+                            <div className="mt-2 text-xs text-rose-600 bg-rose-50 p-1.5 rounded-md border border-rose-100 text-left line-clamp-2" title={result.feedback}>
+                              <strong>ข้อเสนอแนะ:</strong> {result.feedback}
+                            </div>
+                          )}
                         </td>
                         <td className="p-4 text-center">
-                          <button 
-                            onClick={() => onEdit(item)}
-                            className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                            aria-label="แก้ไขข้อมูล"
-                          >
-                            <Edit2 size={18} />
-                          </button>
+                          <div className="flex items-center justify-center gap-2">
+                            {user?.role !== 'admin' && !(result.status === 'ผ่าน' || result.status === 'ไม่ผ่าน' || result.status === 'รอยืนยัน') && (
+                              <button 
+                                onClick={() => onEdit(item)}
+                                className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                aria-label="แก้ไขข้อมูล"
+                                title="แก้ไขข้อมูล"
+                              >
+                                <Edit2 size={18} />
+                              </button>
+                            )}
+                            {user?.role !== 'admin' && (result.status === 'ผ่าน' || result.status === 'ไม่ผ่าน' || result.status === 'รอยืนยัน') && (
+                              <button 
+                                onClick={() => onEdit(item)}
+                                className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                aria-label="ดูข้อมูล"
+                                title="ดูข้อมูล"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                              </button>
+                            )}
+                            {user?.role === 'admin' && onEditMaster && (
+                              <button 
+                                onClick={() => onEditMaster(item)}
+                                className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                aria-label="แก้ไขตัวชี้วัด"
+                                title="แก้ไขตัวชี้วัด"
+                              >
+                                <Edit2 size={18} />
+                              </button>
+                            )}
+                            {user?.role === 'admin' && onDeleteMaster && (
+                              <button 
+                                onClick={() => onDeleteMaster(item.id)}
+                                className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                aria-label="ลบตัวชี้วัด"
+                                title="ลบตัวชี้วัด"
+                              >
+                                <XCircle size={18} />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </motion.tr>
                     );
                   })
                 ) : (
                   <tr>
-                    <td colSpan={7} className="p-8 text-center text-slate-500">
+                    <td colSpan={8} className="p-8 text-center text-slate-500">
                       ไม่พบข้อมูลตัวชี้วัดที่ตรงกับเงื่อนไข
                     </td>
                   </tr>

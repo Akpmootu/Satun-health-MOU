@@ -1,10 +1,22 @@
+export interface ResultHistory {
+  status: string;
+  timestamp: string;
+  user: string;
+  feedback?: string;
+  score?: number | null;
+  result_percentage?: number | string | null;
+}
+
 export interface AreaResult {
   area_name: string;
-  target: number | null;
+  target: number | string | null;
   result_count: number | null;
-  result_percentage: number | null;
+  result_percentage: number | string | null;
   score: number | null;
-  status: 'ผ่าน' | 'ไม่ผ่าน' | 'รอประเมิน';
+  weighted_score?: number | null;
+  status: 'ผ่าน' | 'ไม่ผ่าน' | 'รอประเมิน' | 'รอยืนยัน' | 'แก้ไข';
+  feedback?: string;
+  history?: ResultHistory[];
 }
 
 export interface Indicator {
@@ -14,11 +26,11 @@ export interface Indicator {
   target_criteria: string;
   weight: number;
   score_criteria: {
-    1: string | number;
-    2: string | number;
-    3: string | number;
-    4: string | number;
-    5: string | number;
+    "1": string | number;
+    "2": string | number;
+    "3": string | number;
+    "4": string | number;
+    "5": string | number;
   };
   max_score: number;
   results: Record<string, Record<string, AreaResult>>; // { timeframe: { area: AreaResult } }
@@ -26,15 +38,22 @@ export interface Indicator {
   fiscal_year: string;
 }
 
+export interface User {
+  id: string;
+  username: string;
+  role: 'admin' | 'user';
+  unit: string;
+}
+
 export const AREAS = [
-  'ระดับจังหวัด',
-  'คปสอ.เมือง',
+  'จังหวัด',
+  'คปสอ.เมืองสตูล',
+  'คปสอ.ละงู',
+  'คปสอ.ควนกาหลง',
+  'คปสอ.ทุ่งหว้า',
   'คปสอ.ควนโดน',
   'คปสอ.ท่าแพ',
-  'คปสอ.ควนกาหลง',
-  'คปสอ.ละงู',
-  'คปสอ.ทุ่งหว้า',
-  'คปสอ.มะนัง',
+  'คปสอ.มะนัง'
 ];
 
 export const TIMEFRAMES = [

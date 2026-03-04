@@ -24,7 +24,7 @@ export function ExecutiveSummary({ data, fiscalYear, timeframe }: ExecutiveSumma
     const criticalIndicators: Indicator[] = [];
 
     filteredData.forEach(ind => {
-      const provResult = ind.results[timeframe]?.['ระดับจังหวัด'];
+      const provResult = ind.results[timeframe]?.['จังหวัด'];
       if (provResult) {
         total++;
         if (provResult.status === 'ผ่าน') passed++;
@@ -56,7 +56,7 @@ export function ExecutiveSummary({ data, fiscalYear, timeframe }: ExecutiveSumma
   const getTrendData = (indicator: Indicator) => {
     const quarters = ['ไตรมาส 1 (ต.ค.-ธ.ค.)', 'ไตรมาส 2 (ม.ค.-มี.ค.)', 'ไตรมาส 3 (เม.ย.-มิ.ย.)', 'ไตรมาส 4 (ก.ค.-ก.ย.)'];
     return quarters.map(q => {
-      const val = indicator.results[q]?.['ระดับจังหวัด']?.result_percentage;
+      const val = indicator.results[q]?.['จังหวัด']?.result_percentage;
       return {
         name: q,
         value: val !== undefined && val !== null ? val : 0
@@ -165,7 +165,7 @@ export function ExecutiveSummary({ data, fiscalYear, timeframe }: ExecutiveSumma
           <div className="flex-1 overflow-y-auto pr-2 space-y-3">
             {metrics.criticalIndicators.length > 0 ? (
               metrics.criticalIndicators.map((ind, idx) => {
-                const res = ind.results[timeframe]?.['ระดับจังหวัด'];
+                const res = ind.results[timeframe]?.['จังหวัด'];
                 const trendData = getTrendData(ind);
                 
                 return (
