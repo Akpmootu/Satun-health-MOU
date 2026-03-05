@@ -16,32 +16,44 @@ interface IndicatorFormProps {
 const calculateScore = (result: number, criteria: any) => {
   if (!criteria) return null;
   
-  const c1 = Number(criteria["1"]);
-  const c2 = Number(criteria["2"]);
-  const c3 = Number(criteria["3"]);
-  const c4 = Number(criteria["4"]);
-  const c5 = Number(criteria["5"]);
+  const c = [
+    Number(criteria["1"]),
+    Number(criteria["2"]),
+    Number(criteria["3"]),
+    Number(criteria["4"]),
+    Number(criteria["5"])
+  ];
 
-  if (isNaN(c1) || isNaN(c5)) return null;
+  if (c.some(isNaN)) return null;
 
-  const isAscending = c5 > c1;
+  const isAscending = c[4] > c[0];
 
   if (isAscending) {
-    if (result >= c5) return 5;
-    if (result <= c1) return 1;
+    if (result >= c[4]) return 5;
+    if (result <= c[0]) return 1;
     
-    if (result >= c4) return 4 + (result - c4) / (c5 - c4);
-    if (result >= c3) return 3 + (result - c3) / (c4 - c3);
-    if (result >= c2) return 2 + (result - c2) / (c3 - c2);
-    if (result >= c1) return 1 + (result - c1) / (c2 - c1);
+    for (let i = 3; i >= 0; i--) {
+      if (result >= c[i]) {
+        return (i + 1) + (result - c[i]) / (c[i+1] - c[i]);
+      }
+    }
   } else {
-    if (result <= c5) return 5;
-    if (result >= c1) return 1;
+    // กรณีเกณฑ์ยิ่งน้อยยิ่งได้คะแนนเยอะ (เช่น <= 20%)
+    if (result <= c[4]) return 5;
+    if (result >= c[0]) return 1;
 
-    if (result <= c4) return 4 + (c4 - result) / (c4 - c5);
-    if (result <= c3) return 3 + (c3 - result) / (c3 - c4);
-    if (result <= c2) return 2 + (c2 - result) / (c2 - c3);
-    if (result <= c1) return 1 + (c1 - result) / (c1 - c2);
+    // เทียบเท่ากับสูตร MATCH(L6, F6:J6, -1) + (L6 - INDEX(...)) / (INDEX(...) - INDEX(...))
+    let matchIndex = -1;
+    for (let i = 4; i >= 0; i--) {
+      if (c[i] >= result) {
+        matchIndex = i;
+        break;
+      }
+    }
+    
+    if (matchIndex !== -1 && matchIndex < 4) {
+      return (matchIndex + 1) + (result - c[matchIndex]) / (c[matchIndex + 1] - c[matchIndex]);
+    }
   }
   return null;
 };
