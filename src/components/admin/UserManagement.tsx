@@ -118,17 +118,11 @@ export function UserManagement() {
         const role = (document.getElementById('swal-input3') as HTMLSelectElement).value;
         const unit = (document.getElementById('swal-input4') as HTMLSelectElement).value;
         
-        let assigned_indicators: string[] = [];
-        if (role === 'กลุ่มงาน สสจ.') {
-          const indSelect = document.getElementById('swal-input5') as HTMLSelectElement;
-          assigned_indicators = Array.from(indSelect.selectedOptions).map(opt => opt.value);
-        }
-        
         if (!username || !password) {
           Swal.showValidationMessage('กรุณากรอกชื่อผู้ใช้งานและรหัสผ่าน');
           return false;
         }
-        return { username, password, role, unit, assigned_indicators };
+        return { username, password, role, unit };
       }
     });
 
@@ -226,15 +220,7 @@ export function UserManagement() {
         const role = (document.getElementById('swal-input3') as HTMLSelectElement).value;
         const unit = (document.getElementById('swal-input4') as HTMLSelectElement).value;
         
-        let assigned_indicators = user.assigned_indicators || [];
-        if (role === 'กลุ่มงาน สสจ.') {
-          const indSelect = document.getElementById('swal-input5') as HTMLSelectElement;
-          assigned_indicators = Array.from(indSelect.selectedOptions).map(opt => opt.value);
-        } else {
-          assigned_indicators = []; // Clear if not this role
-        }
-        
-        const updateData: any = { role, unit, assigned_indicators };
+        const updateData: any = { role, unit };
         if (password) {
           updateData.password = password;
         }
