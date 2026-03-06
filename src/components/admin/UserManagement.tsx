@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
-import { User, AREAS } from '../../types';
+import { User, AREAS, Indicator, RESPONSIBLE_GROUPS } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { motion } from 'motion/react';
-import { Users, Plus, Edit2, Trash2, Shield, ShieldAlert } from 'lucide-react';
+import { Users, Plus, Edit2, Trash2, Shield, ShieldAlert, Briefcase } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 export function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
+  const [indicators, setIndicators] = useState<Indicator[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchUsers();
+    fetchIndicators();
   }, []);
 
   const fetchUsers = async () => {
@@ -36,6 +38,20 @@ export function UserManagement() {
     }
   };
 
+  const fetchIndicators = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('indicators')
+        .select('id, name')
+        .order('order_num', { ascending: true });
+
+      if (error) throw error;
+      setIndicators(data || []);
+    } catch (error) {
+      console.error('Error fetching indicators:', error);
+    }
+  };
+
   const handleAddUser = async () => {
     const { value: formValues } = await Swal.fire({
       title: 'เพิ่มผู้ใช้งานใหม่',
@@ -54,6 +70,7 @@ export function UserManagement() {
             <select id="swal-input3" class="swal2-select !w-full !m-0 !text-sm">
               <option value="user">ผู้ใช้งานทั่วไป (User)</option>
               <option value="admin">ผู้ดูแลระบบ (Admin)</option>
+              <option value="กลุ่มงาน สสจ.">กลุ่มงาน สสจ.</option>
             </select>
           </div>
           <div>
@@ -62,6 +79,13 @@ export function UserManagement() {
               ${AREAS.map(area => `<option value="${area}">${area}</option>`).join('')}
             </select>
           </div>
+          <div id="indicator-container" style="display: none;">
+            <label class="block text-sm font-medium text-slate-700 mb-1">ตัวชี้วัดที่รับผิดชอบ (เลือกได้หลายข้อ)</label>
+            <select id="swal-input5" class="swal2-select !w-full !m-0 !text-sm" multiple style="height: 120px;">
+              ${indicators.map(ind => `<option value="${ind.id}">${ind.name}</option>`).join('')}
+            </select>
+            <p class="text-xs text-slate-500 mt-1">กด Ctrl (หรือ Cmd) ค้างไว้เพื่อเลือกหลายรายการ</p>
+          </div>
         </div>
       `,
       focusConfirm: false,
@@ -69,17 +93,42 @@ export function UserManagement() {
       confirmButtonText: 'บันทึก',
       cancelButtonText: 'ยกเลิก',
       confirmButtonColor: '#4f46e5',
+      didOpen: () => {
+        const roleSelect = document.getElementById('swal-input3') as HTMLSelectElement;
+        const unitSelect = document.getElementById('swal-input4') as HTMLSelectElement;
+        const indContainer = document.getElementById('indicator-container');
+        
+        const areasHtml = `${AREAS.map(area => `<option value="${area}">${area}</option>`).join('')}`;
+        const groupsHtml = `${RESPONSIBLE_GROUPS.map(group => `<option value="${group.name}">${group.name}</option>`).join('')}`;
+
+        roleSelect.addEventListener('change', (e) => {
+          const selectedRole = (e.target as HTMLSelectElement).value;
+          if (selectedRole === 'กลุ่มงาน สสจ.') {
+            indContainer?.style.setProperty('display', 'block');
+            unitSelect.innerHTML = groupsHtml;
+          } else {
+            indContainer?.style.setProperty('display', 'none');
+            unitSelect.innerHTML = areasHtml;
+          }
+        });
+      },
       preConfirm: () => {
         const username = (document.getElementById('swal-input1') as HTMLInputElement).value;
         const password = (document.getElementById('swal-input2') as HTMLInputElement).value;
         const role = (document.getElementById('swal-input3') as HTMLSelectElement).value;
         const unit = (document.getElementById('swal-input4') as HTMLSelectElement).value;
         
+        let assigned_indicators: string[] = [];
+        if (role === 'กลุ่มงาน สสจ.') {
+          const indSelect = document.getElementById('swal-input5') as HTMLSelectElement;
+          assigned_indicators = Array.from(indSelect.selectedOptions).map(opt => opt.value);
+        }
+        
         if (!username || !password) {
           Swal.showValidationMessage('กรุณากรอกชื่อผู้ใช้งานและรหัสผ่าน');
           return false;
         }
-        return { username, password, role, unit };
+        return { username, password, role, unit, assigned_indicators };
       }
     });
 
@@ -123,6 +172,7 @@ export function UserManagement() {
             <select id="swal-input3" class="swal2-select !w-full !m-0 !text-sm">
               <option value="user" ${user.role === 'user' ? 'selected' : ''}>ผู้ใช้งานทั่วไป (User)</option>
               <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>ผู้ดูแลระบบ (Admin)</option>
+              <option value="กลุ่มงาน สสจ." ${user.role === 'กลุ่มงาน สสจ.' ? 'selected' : ''}>กลุ่มงาน สสจ.</option>
             </select>
           </div>
           <div>
@@ -131,6 +181,13 @@ export function UserManagement() {
               ${AREAS.map(area => `<option value="${area}" ${user.unit === area ? 'selected' : ''}>${area}</option>`).join('')}
             </select>
           </div>
+          <div id="indicator-container" style="display: ${user.role === 'กลุ่มงาน สสจ.' ? 'block' : 'none'};">
+            <label class="block text-sm font-medium text-slate-700 mb-1">ตัวชี้วัดที่รับผิดชอบ (เลือกได้หลายข้อ)</label>
+            <select id="swal-input5" class="swal2-select !w-full !m-0 !text-sm" multiple style="height: 120px;">
+              ${indicators.map(ind => `<option value="${ind.id}" ${(user.assigned_indicators || []).includes(ind.id) ? 'selected' : ''}>${ind.name}</option>`).join('')}
+            </select>
+            <p class="text-xs text-slate-500 mt-1">กด Ctrl (หรือ Cmd) ค้างไว้เพื่อเลือกหลายรายการ</p>
+          </div>
         </div>
       `,
       focusConfirm: false,
@@ -138,12 +195,46 @@ export function UserManagement() {
       confirmButtonText: 'บันทึก',
       cancelButtonText: 'ยกเลิก',
       confirmButtonColor: '#4f46e5',
+      didOpen: () => {
+        const roleSelect = document.getElementById('swal-input3') as HTMLSelectElement;
+        const unitSelect = document.getElementById('swal-input4') as HTMLSelectElement;
+        const indContainer = document.getElementById('indicator-container');
+        
+        const areasHtml = `${AREAS.map(area => `<option value="${area}" ${user.unit === area ? 'selected' : ''}>${area}</option>`).join('')}`;
+        const groupsHtml = `${RESPONSIBLE_GROUPS.map(group => `<option value="${group.name}" ${user.unit === group.name ? 'selected' : ''}>${group.name}</option>`).join('')}`;
+
+        // Initialize unit options based on current role
+        if (user.role === 'กลุ่มงาน สสจ.') {
+          unitSelect.innerHTML = groupsHtml;
+        } else {
+          unitSelect.innerHTML = areasHtml;
+        }
+
+        roleSelect.addEventListener('change', (e) => {
+          const selectedRole = (e.target as HTMLSelectElement).value;
+          if (selectedRole === 'กลุ่มงาน สสจ.') {
+            indContainer?.style.setProperty('display', 'block');
+            unitSelect.innerHTML = groupsHtml;
+          } else {
+            indContainer?.style.setProperty('display', 'none');
+            unitSelect.innerHTML = areasHtml;
+          }
+        });
+      },
       preConfirm: () => {
         const password = (document.getElementById('swal-input2') as HTMLInputElement).value;
         const role = (document.getElementById('swal-input3') as HTMLSelectElement).value;
         const unit = (document.getElementById('swal-input4') as HTMLSelectElement).value;
         
-        const updateData: any = { role, unit };
+        let assigned_indicators = user.assigned_indicators || [];
+        if (role === 'กลุ่มงาน สสจ.') {
+          const indSelect = document.getElementById('swal-input5') as HTMLSelectElement;
+          assigned_indicators = Array.from(indSelect.selectedOptions).map(opt => opt.value);
+        } else {
+          assigned_indicators = []; // Clear if not this role
+        }
+        
+        const updateData: any = { role, unit, assigned_indicators };
         if (password) {
           updateData.password = password;
         }
@@ -253,10 +344,12 @@ export function UserManagement() {
                       <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium ${
                         u.role === 'admin' 
                           ? 'bg-purple-50 text-purple-700 border-purple-200' 
+                          : u.role === 'กลุ่มงาน สสจ.'
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                           : 'bg-blue-50 text-blue-700 border-blue-200'
                       }`}>
-                        {u.role === 'admin' ? <ShieldAlert size={14} /> : <Shield size={14} />}
-                        <span>{u.role === 'admin' ? 'ผู้ดูแลระบบ' : 'ผู้ใช้งานทั่วไป'}</span>
+                        {u.role === 'admin' ? <ShieldAlert size={14} /> : u.role === 'กลุ่มงาน สสจ.' ? <Briefcase size={14} /> : <Shield size={14} />}
+                        <span>{u.role === 'admin' ? 'ผู้ดูแลระบบ' : u.role === 'กลุ่มงาน สสจ.' ? 'กลุ่มงาน สสจ.' : 'ผู้ใช้งานทั่วไป'}</span>
                       </div>
                     </td>
                     <td className="p-4 text-center">

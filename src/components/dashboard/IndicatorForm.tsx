@@ -160,7 +160,7 @@ export function IndicatorForm({ indicator, timeframe, onClose, onSave, user }: I
 
   const currentResult = formData.results[timeframe]?.[activeTab] || { target: null, result_count: null, result_percentage: null, score: null, weighted_score: null, status: 'รอประเมิน' };
   
-  const isReadOnly = user?.role !== 'admin' && (currentResult.status === 'ผ่าน' || currentResult.status === 'ไม่ผ่าน' || currentResult.status === 'รอยืนยัน');
+  const isReadOnly = user?.role === 'กลุ่มงาน สสจ.' || (user?.role !== 'admin' && (currentResult.status === 'ผ่าน' || currentResult.status === 'ไม่ผ่าน' || currentResult.status === 'รอยืนยัน'));
 
   return (
     <div className="space-y-6">

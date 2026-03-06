@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Indicator, AREAS, User } from '../../types';
+import { Indicator, AREAS, User, RESPONSIBLE_GROUPS } from '../../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Edit2, Search, Filter, Plus, CheckCircle2, XCircle, Clock, ArrowUpDown, Info, ChevronDown, ChevronUp, ShieldCheck, AlertCircle } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -266,7 +266,7 @@ export function IndicatorsList({ data, fiscalYear, timeframe, onEdit, onVerify, 
               <select 
                 value={selectedArea}
                 onChange={(e) => setSelectedArea(e.target.value)}
-                disabled={user?.role !== 'admin'}
+                disabled={user?.role === 'user'}
                 className="bg-transparent text-sm focus:outline-none cursor-pointer appearance-none pr-4 disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 {AREAS.map(area => (
@@ -346,10 +346,18 @@ export function IndicatorsList({ data, fiscalYear, timeframe, onEdit, onVerify, 
                         <td className="p-4 text-center font-medium text-slate-500">{item.order}</td>
                         <td className="p-4">
                           <p className="text-slate-800 font-medium line-clamp-2 group-hover:line-clamp-none transition-all">{item.name}</p>
-                          <div className="flex items-center gap-2 mt-1.5">
+                          <div className="flex flex-wrap items-center gap-2 mt-1.5">
                             <span className={cn("text-xs font-semibold px-2 py-0.5 rounded-md border", getExcellenceCategory(item.order).bg, getExcellenceCategory(item.order).color, getExcellenceCategory(item.order).border)}>
                               {getExcellenceCategory(item.order).name}
                             </span>
+                            {item.responsible_groups?.map(group => {
+                              const groupInfo = RESPONSIBLE_GROUPS.find(g => g.name === group);
+                              return (
+                                <span key={group} className={cn("text-xs font-semibold px-2 py-0.5 rounded-md border", groupInfo?.color || "bg-slate-100 text-slate-700 border-slate-200")}>
+                                  {group}
+                                </span>
+                              );
+                            })}
                           </div>
                         </td>
                         <td className="p-4 text-center text-slate-600">{result.target ?? '-'}</td>
@@ -378,7 +386,7 @@ export function IndicatorsList({ data, fiscalYear, timeframe, onEdit, onVerify, 
                         </td>
                         <td className="p-4 text-center">
                           <div className="flex items-center justify-center gap-2">
-                            {user?.role !== 'admin' && !(result.status === 'ผ่าน' || result.status === 'ไม่ผ่าน' || result.status === 'รอยืนยัน') && (
+                            {user?.role === 'user' && !(result.status === 'ผ่าน' || result.status === 'ไม่ผ่าน' || result.status === 'รอยืนยัน') && (
                               <button 
                                 onClick={() => onEdit(item)}
                                 className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
@@ -388,7 +396,7 @@ export function IndicatorsList({ data, fiscalYear, timeframe, onEdit, onVerify, 
                                 <Edit2 size={18} />
                               </button>
                             )}
-                            {user?.role !== 'admin' && (result.status === 'ผ่าน' || result.status === 'ไม่ผ่าน' || result.status === 'รอยืนยัน') && (
+                            {(user?.role !== 'user' || (result.status === 'ผ่าน' || result.status === 'ไม่ผ่าน' || result.status === 'รอยืนยัน')) && (
                               <button 
                                 onClick={() => onEdit(item)}
                                 className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"

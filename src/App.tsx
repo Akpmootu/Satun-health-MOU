@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
-import { ExecutiveSummary } from './components/dashboard/ExecutiveSummary';
 import { Dashboard } from './components/dashboard/Dashboard';
 import { IndicatorsList } from './components/dashboard/IndicatorsList';
 import { IndicatorForm } from './components/dashboard/IndicatorForm';
@@ -12,6 +11,9 @@ import { LoadingScreen } from './components/common/LoadingScreen';
 import { LoginScreen } from './components/auth/LoginScreen';
 import { UserManagement } from './components/admin/UserManagement';
 import { VerifyDataList } from './components/admin/VerifyDataList';
+import { NewsManagement } from './components/admin/NewsManagement';
+import { NewsAnnouncement } from './components/common/NewsAnnouncement';
+import { PrivacyPolicyModal } from './components/common/PrivacyPolicyModal';
 import { Indicator, TIMEFRAMES, User } from './types';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from './lib/supabase';
@@ -23,12 +25,15 @@ export default function App() {
   const [view, setView] = useState<'landing' | 'login' | 'app'>('landing');
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState('executive');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [fiscalYear, setFiscalYear] = useState('2569');
   const [timeframe, setTimeframe] = useState(TIMEFRAMES[0]); // Default to 'ภาพรวม (สะสม)'
   const [data, setData] = useState<Indicator[]>([]);
   const [editingIndicator, setEditingIndicator] = useState<Indicator | null>(null);
   const [editingMasterIndicator, setEditingMasterIndicator] = useState<Indicator | null>(null);
+  const [showNews, setShowNews] = useState(false);
+  const [newsContent, setNewsContent] = useState<any>(null);
+  const [hasAcknowledgedNews, setHasAcknowledgedNews] = useState(false);
 
   // Fetch data from Supabase
   const fetchData = async () => {
@@ -64,6 +69,52 @@ export default function App() {
       setIsLoading(false);
     }
   };
+
+  // Fetch active news
+  const fetchActiveNews = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('news')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        if (error.code === '42P01') {
+          // Table doesn't exist, use fallback
+          setNewsContent({
+            title: 'ระบบ STN Health KPI เปิดให้ใช้งานแล้ว !',
+            body: 'กรุณาเข้ามาประเมินตัวชี้วัด MOU ให้เสร็จ !\nระบบจะปิดให้บันทึก ในวันที่ 15 มีนาคม 2569\nหากมีปัญหาการใช้งาน ติดต่อกลุ่มงานสุขภาพดิจิทัล สำนักงานสาธารณสุขจังหวัดสตูลได้เลย',
+            date: new Date().toISOString()
+          });
+          setShowNews(true);
+          return;
+        }
+        throw error;
+      }
+
+      if (data && data.length > 0) {
+        setNewsContent({
+          title: data[0].title,
+          body: data[0].body,
+          date: data[0].created_at
+        });
+        setShowNews(true);
+      } else {
+        setHasAcknowledgedNews(true);
+      }
+    } catch (error) {
+      console.error('Error fetching news:', error);
+      setHasAcknowledgedNews(true);
+    }
+  };
+
+  useEffect(() => {
+    if (view === 'app' && !hasAcknowledgedNews) {
+      fetchActiveNews();
+    }
+  }, [hasAcknowledgedNews, view]);
 
   useEffect(() => {
     if (view === 'app') {
@@ -114,9 +165,10 @@ export default function App() {
           .eq('id', indicator.id);
         if (error) throw error;
       } else {
+        const { id, ...insertData } = dbData;
         const { error } = await supabase
           .from('indicators')
-          .insert([dbData]);
+          .insert([insertData]);
         if (error) throw error;
       }
 
@@ -268,9 +320,26 @@ export default function App() {
     }
   };
 
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
+
   const handleLogin = (loggedInUser: User) => {
     setUser(loggedInUser);
-    setView('app');
+    
+    // Check privacy policy acceptance
+    const acceptedPrivacy = localStorage.getItem(`privacy_accepted_${loggedInUser.id}`);
+    if (!acceptedPrivacy) {
+      setShowPrivacyPolicy(true);
+    } else {
+      setView('app');
+    }
+  };
+
+  const handleAcceptPrivacy = () => {
+    if (user) {
+      localStorage.setItem(`privacy_accepted_${user.id}`, 'true');
+      setShowPrivacyPolicy(false);
+      setView('app');
+    }
   };
 
   const handleLogout = () => {
@@ -324,6 +393,12 @@ export default function App() {
 
   const pendingCount = data.reduce((count, item) => {
     let pending = 0;
+    
+    // If user is 'กลุ่มงาน สสจ.', only count their assigned indicators
+    if (user?.role === 'กลุ่มงาน สสจ.' && !user.assigned_indicators?.includes(item.id)) {
+      return count;
+    }
+
     if (item.results[timeframe]) {
       Object.values(item.results[timeframe]).forEach((res: any) => {
         if (res.status === 'รอยืนยัน') pending++;
@@ -334,7 +409,7 @@ export default function App() {
 
   const notifications = useMemo(() => {
     const notifs: any[] = [];
-    if (user?.role === 'admin') {
+    if (user?.role === 'admin' || user?.role === 'กลุ่มงาน สสจ.') {
       if (pendingCount > 0) {
         notifs.push({
           id: 'pending',
@@ -371,11 +446,24 @@ export default function App() {
   }
 
   if (view === 'landing') {
-    return <WelcomePage onEnterApp={handleEnterApp} />;
+    return (
+      <>
+        <WelcomePage onEnterApp={handleEnterApp} />
+      </>
+    );
   }
 
   if (view === 'login') {
-    return <LoginScreen onLogin={handleLogin} />;
+    return (
+      <>
+        <LoginScreen onLogin={handleLogin} />
+        <AnimatePresence>
+          {showPrivacyPolicy && (
+            <PrivacyPolicyModal onAccept={handleAcceptPrivacy} />
+          )}
+        </AnimatePresence>
+      </>
+    );
   }
 
   return (
@@ -403,6 +491,18 @@ export default function App() {
         />
         
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+          <AnimatePresence>
+            {showNews && newsContent && (
+              <NewsAnnouncement 
+                content={newsContent} 
+                onAcknowledge={() => {
+                  setShowNews(false);
+                  setHasAcknowledgedNews(true);
+                }} 
+              />
+            )}
+          </AnimatePresence>
+
           {/* Pending Verification Alert for Admins */}
           {user?.role === 'admin' && pendingCount > 0 && activeTab !== 'indicators' && (
             <motion.div 
@@ -429,18 +529,6 @@ export default function App() {
           )}
 
           <AnimatePresence mode="wait">
-            {activeTab === 'executive' && (
-              <motion.div
-                key="executive"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-              >
-                <ExecutiveSummary data={data} fiscalYear={fiscalYear} timeframe={timeframe} />
-              </motion.div>
-            )}
-
             {activeTab === 'dashboard' && (
               <motion.div
                 key="dashboard"
@@ -467,7 +555,7 @@ export default function App() {
                   timeframe={timeframe}
                   onEdit={setEditingIndicator} 
                   onVerify={handleVerifyIndicator}
-                  onAddMaster={() => setEditingMasterIndicator({ id: '', name: '', order: data.length + 1, target_criteria: '', weight: 1, responsible_group: '', fiscal_year: fiscalYear, results: {} })}
+                  onAddMaster={() => setEditingMasterIndicator({ id: '', name: '', order: data.length + 1, target_criteria: '', weight: 1, responsible_group: '', responsible_groups: [], fiscal_year: fiscalYear, results: {}, score_criteria: { "1": "", "2": "", "3": "", "4": "", "5": "" }, max_score: 5 })}
                   onEditMaster={setEditingMasterIndicator}
                   onDeleteMaster={handleDeleteMaster}
                   user={user}
@@ -509,7 +597,7 @@ export default function App() {
               </motion.div>
             )}
 
-            {activeTab === 'verify' && user?.role === 'admin' && (
+            {activeTab === 'verify' && (user?.role === 'admin' || user?.role === 'กลุ่มงาน สสจ.') && (
               <motion.div
                 key="verify"
                 initial={{ opacity: 0, y: 10 }}
@@ -521,6 +609,7 @@ export default function App() {
                   data={data} 
                   timeframe={timeframe}
                   onVerify={handleVerifyIndicator}
+                  user={user}
                 />
               </motion.div>
             )}
@@ -534,6 +623,18 @@ export default function App() {
                 transition={{ duration: 0.2 }}
               >
                 <UserManagement />
+              </motion.div>
+            )}
+
+            {activeTab === 'news' && user?.role === 'admin' && (
+              <motion.div
+                key="news"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <NewsManagement />
               </motion.div>
             )}
 

@@ -19,21 +19,21 @@ export function Sidebar({ isOpen, setIsOpen, activeTab, setActiveTab, onGoHome, 
       title: 'ส่วนระบบ',
       items: [
         { id: 'home', label: 'หน้าแรก', icon: Home, action: onGoHome },
-        ...(user?.role === 'admin' ? [{ id: 'users', label: 'จัดการผู้ใช้งาน', icon: Users }] : [])
+        ...(user?.role === 'admin' ? [{ id: 'users', label: 'จัดการผู้ใช้งาน', icon: Users }] : []),
+        ...(user?.role === 'admin' ? [{ id: 'news', label: 'จัดการข่าว', icon: FileText }] : [])
       ]
     },
     {
       title: 'ส่วนแดชบอร์ด',
       items: [
-        { id: 'executive', label: 'ผู้บริหาร (Executive)', icon: Briefcase },
-        { id: 'dashboard', label: 'ภาพรวม (Dashboard)', icon: LayoutDashboard },
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
       ]
     },
     {
       title: 'ส่วนลงข้อมูล',
       items: [
         { id: 'indicators', label: 'ตัวชี้วัด MOU', icon: Edit3 },
-        ...(user?.role === 'admin' ? [{ id: 'verify', label: 'ตรวจสอบข้อมูล', icon: FileText }] : [])
+        ...(user?.role === 'admin' || user?.role === 'กลุ่มงาน สสจ.' ? [{ id: 'verify', label: 'ตรวจสอบข้อมูล', icon: FileText }] : [])
       ]
     }
   ];

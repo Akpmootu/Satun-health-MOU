@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Indicator, AREAS } from '../../types';
+import { Indicator, AREAS, User, RESPONSIBLE_GROUPS } from '../../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, ShieldCheck, CheckCircle2, XCircle, Clock, AlertCircle } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -9,9 +9,10 @@ interface VerifyDataListProps {
   data: Indicator[];
   timeframe: string;
   onVerify: (indicator: Indicator, area: string, status: 'ผ่าน' | 'ไม่ผ่าน' | 'รอประเมิน' | 'รอยืนยัน' | 'แก้ไข', feedback?: string) => void;
+  user: User | null;
 }
 
-export function VerifyDataList({ data, timeframe, onVerify }: VerifyDataListProps) {
+export function VerifyDataList({ data, timeframe, onVerify, user }: VerifyDataListProps) {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Flatten data to get all pending verifications across all areas
@@ -19,6 +20,11 @@ export function VerifyDataList({ data, timeframe, onVerify }: VerifyDataListProp
     const items: { indicator: Indicator; area: string; result: any }[] = [];
     
     data.forEach(indicator => {
+      // If user is 'กลุ่มงาน สสจ.', only show their assigned indicators
+      if (user?.role === 'กลุ่มงาน สสจ.' && !user.assigned_indicators?.includes(indicator.id)) {
+        return;
+      }
+
       if (indicator.results[timeframe]) {
         Object.keys(indicator.results[timeframe]).forEach(area => {
           const result = indicator.results[timeframe][area];
@@ -181,6 +187,16 @@ export function VerifyDataList({ data, timeframe, onVerify }: VerifyDataListProp
                       <td className="p-4 text-center font-medium text-slate-500">{item.indicator.order}</td>
                       <td className="p-4">
                         <p className="text-slate-800 font-medium line-clamp-2 group-hover:line-clamp-none transition-all">{item.indicator.name}</p>
+                        <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                          {item.indicator.responsible_groups?.map(group => {
+                            const groupInfo = RESPONSIBLE_GROUPS.find(g => g.name === group);
+                            return (
+                              <span key={group} className={cn("text-xs font-semibold px-2 py-0.5 rounded-md border", groupInfo?.color || "bg-slate-100 text-slate-700 border-slate-200")}>
+                                {group}
+                              </span>
+                            );
+                          })}
+                        </div>
                       </td>
                       <td className="p-4 text-center font-medium text-indigo-600">{item.area}</td>
                       <td className="p-4 text-center font-medium text-slate-700">{item.result.result_percentage ?? '-'}</td>

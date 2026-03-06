@@ -35,15 +35,34 @@ export interface Indicator {
   max_score: number;
   results: Record<string, Record<string, AreaResult>>; // { timeframe: { area: AreaResult } }
   responsible_group: string;
+  responsible_groups?: string[]; // Array of group names
   fiscal_year: string;
 }
 
 export interface User {
   id: string;
   username: string;
-  role: 'admin' | 'user';
+  role: 'admin' | 'user' | 'กลุ่มงาน สสจ.';
   unit: string;
+  assigned_indicators?: string[]; // Array of indicator IDs
 }
+
+export const RESPONSIBLE_GROUPS = [
+  { name: 'บริหารทั่วไป', color: 'bg-gray-500 text-white' },
+  { name: 'พัฒนายุทธศาสตร์สาธารณสุข', color: 'bg-blue-500 text-white' },
+  { name: 'ประกันสุขภาพ', color: 'bg-green-500 text-white' },
+  { name: 'สุขภาพดิจิทัล', color: 'bg-indigo-500 text-white' },
+  { name: 'นิติการ', color: 'bg-slate-700 text-white' },
+  { name: 'ส่งเสริมสุขภาพ', color: 'bg-pink-500 text-white' },
+  { name: 'ควบคุมโรคติดต่อ', color: 'bg-orange-500 text-white' },
+  { name: 'ควบคุมโรคไม่ติดต่อ สุขภาพจิตและยาเสพติด', color: 'bg-red-500 text-white' },
+  { name: 'พัฒนารูปแบบบริการและคุณภาพ', color: 'bg-teal-500 text-white' },
+  { name: 'ปฐมภูมิและเครือข่ายสุขภาพ', color: 'bg-cyan-500 text-white' },
+  { name: 'ทันตสาธารณสุข', color: 'bg-purple-500 text-white' },
+  { name: 'อนามัยสิ่งแวดล้อมและอาชีวอนามัย', color: 'bg-lime-500 text-white' },
+  { name: 'แพทย์แผนไทยและการแพทย์ทางเลือก', color: 'bg-emerald-500 text-white' },
+  { name: 'คุ้มครองผู้บริโภคและเภสัชสาธารณสุข', color: 'bg-rose-500 text-white' }
+];
 
 export const AREAS = [
   'จังหวัด',
