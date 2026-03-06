@@ -5,6 +5,7 @@ export interface ResultHistory {
   feedback?: string;
   score?: number | null;
   result_percentage?: number | string | null;
+  note?: string;
 }
 
 export interface AreaResult {
@@ -17,6 +18,7 @@ export interface AreaResult {
   status: 'ผ่าน' | 'ไม่ผ่าน' | 'รอประเมิน' | 'รอยืนยัน' | 'แก้ไข';
   feedback?: string;
   history?: ResultHistory[];
+  note?: string;
 }
 
 export interface Indicator {

@@ -281,7 +281,8 @@ export default function App() {
       });
 
       // Prepare data for DB (map order back to order_num)
-      const { order, ...rest } = updatedIndicator;
+      // Exclude responsible_groups as it is a frontend-only field derived from responsible_group
+      const { order, responsible_groups, ...rest } = updatedIndicator;
       const dbData = {
         ...rest,
         order_num: String(order),

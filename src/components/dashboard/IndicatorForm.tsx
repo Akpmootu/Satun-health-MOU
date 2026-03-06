@@ -122,6 +122,21 @@ export function IndicatorForm({ indicator, timeframe, onClose, onSave, user }: I
     });
   };
 
+  const handleNoteChange = (area: string, value: string) => {
+    setFormData(prev => {
+      if (!prev) return prev;
+      const newResults = { ...prev.results };
+      if (!newResults[timeframe]) newResults[timeframe] = {};
+      
+      if (!newResults[timeframe][area]) {
+        newResults[timeframe][area] = { area_name: area, target: null, result_count: null, result_percentage: null, score: null, weighted_score: null, status: 'รอประเมิน', note: '' };
+      }
+      
+      newResults[timeframe][area] = { ...newResults[timeframe][area], note: value };
+      return { ...prev, results: newResults };
+    });
+  };
+
   const handleNext = () => {
     const currentResult = formData.results[timeframe]?.[activeTab];
     if (currentResult?.result_percentage === null || currentResult?.result_percentage === undefined) {
@@ -166,7 +181,7 @@ export function IndicatorForm({ indicator, timeframe, onClose, onSave, user }: I
     onClose();
   };
 
-  const currentResult = formData.results[timeframe]?.[activeTab] || { target: null, result_count: null, result_percentage: null, score: null, weighted_score: null, status: 'รอประเมิน' };
+  const currentResult = formData.results[timeframe]?.[activeTab] || { target: null, result_count: null, result_percentage: null, score: null, weighted_score: null, status: 'รอประเมิน', note: '' };
   
   const isReadOnly = user?.role === 'กลุ่มงาน สสจ.' || (user?.role !== 'admin' && (currentResult.status === 'ผ่าน' || currentResult.status === 'ไม่ผ่าน' || currentResult.status === 'รอยืนยัน'));
 
@@ -372,7 +387,7 @@ export function IndicatorForm({ indicator, timeframe, onClose, onSave, user }: I
                 </div>
 
                 {/* Auto-calculated Results */}
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 gap-6 mb-8">
                   <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 text-center transition-colors duration-300" style={currentResult.score !== null && currentResult.score !== undefined ? { backgroundColor: `hsl(${Math.max(0, Math.min(120, (Number(currentResult.score) - 1) * 30))}, 80%, 95%)`, borderColor: `hsl(${Math.max(0, Math.min(120, (Number(currentResult.score) - 1) * 30))}, 80%, 85%)` } : {}}>
                     <span className="block text-sm font-medium text-slate-500 mb-2">ระดับคะแนนที่ได้</span>
                     <div className="text-4xl font-bold text-slate-800" style={currentResult.score !== null && currentResult.score !== undefined ? { color: `hsl(${Math.max(0, Math.min(120, (Number(currentResult.score) - 1) * 30))}, 80%, 35%)` } : {}}>
@@ -385,6 +400,22 @@ export function IndicatorForm({ indicator, timeframe, onClose, onSave, user }: I
                       {currentResult.weighted_score !== null && currentResult.weighted_score !== undefined ? Number(currentResult.weighted_score).toFixed(4) : '-'}
                     </div>
                   </div>
+                </div>
+
+                {/* Optional Note */}
+                <div className="mb-8">
+                  <label htmlFor="note" className="block text-sm font-medium text-slate-700 mb-2">
+                    คำอธิบายเพิ่มเติม (Optional)
+                  </label>
+                  <textarea
+                    id="note"
+                    rows={4}
+                    value={currentResult.note || ''}
+                    onChange={(e) => handleNoteChange(activeTab, e.target.value)}
+                    disabled={isReadOnly}
+                    className="block w-full rounded-xl border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-4 bg-slate-50 disabled:opacity-70 disabled:cursor-not-allowed"
+                    placeholder="ระบุรายละเอียดเพิ่มเติม..."
+                  />
                 </div>
               </div>
             </div>
@@ -449,10 +480,18 @@ export function IndicatorForm({ indicator, timeframe, onClose, onSave, user }: I
                     {currentResult.score !== null && currentResult.score !== undefined ? Number(currentResult.score).toFixed(4) : '-'}
                   </span>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center pb-4 border-b border-slate-200">
                   <span className="text-slate-500">คะแนนถ่วงน้ำหนัก:</span>
                   <span className="font-bold text-emerald-600">{currentResult.weighted_score !== null && currentResult.weighted_score !== undefined ? Number(currentResult.weighted_score).toFixed(4) : '-'}</span>
                 </div>
+                {currentResult.note && (
+                  <div className="flex flex-col gap-2 pt-2">
+                    <span className="text-slate-500">คำอธิบายเพิ่มเติม:</span>
+                    <p className="text-slate-800 bg-white p-3 rounded-lg border border-slate-200 text-sm">
+                      {currentResult.note}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
