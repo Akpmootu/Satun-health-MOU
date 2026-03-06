@@ -1,8 +1,9 @@
-import { Menu, Bell, User as UserIcon, Search, Calendar, ShieldCheck, AlertCircle } from 'lucide-react';
+import { Menu, Bell, User as UserIcon, Search, Calendar, ShieldCheck, AlertCircle, ChevronDown } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { TIMEFRAMES, User } from '../../types';
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { CustomSelect } from '../common/CustomSelect';
 
 export interface NotificationItem {
   id: string;
@@ -78,31 +79,27 @@ export function Header({ isOpen, setIsOpen, fiscalYear, setFiscalYear, timeframe
         {/* Timeframe Selector */}
         <div className="hidden lg:flex items-center gap-2">
           <Calendar size={16} className="text-slate-400" />
-          <select
-            value={timeframe}
-            onChange={(e) => setTimeframe(e.target.value)}
-            className="bg-white border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2 transition-colors cursor-pointer font-medium"
-            aria-label="เลือกรอบเวลา"
-          >
-            {TIMEFRAMES.map(tf => (
-              <option key={tf} value={tf}>{tf}</option>
-            ))}
-          </select>
+          <div className="w-48">
+            <CustomSelect
+              value={timeframe}
+              onChange={setTimeframe}
+              options={TIMEFRAMES.map(tf => ({ value: tf, label: tf }))}
+              className="w-full"
+            />
+          </div>
         </div>
 
         {/* Year Selector */}
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-slate-500 hidden sm:inline-block">ปีงบฯ:</span>
-          <select
-            value={fiscalYear}
-            onChange={(e) => setFiscalYear(e.target.value)}
-            className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2 transition-colors cursor-pointer font-medium"
-            aria-label="เลือกปีงบประมาณ"
-          >
-            {years.map(year => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
+          <div className="w-24">
+            <CustomSelect
+              value={fiscalYear}
+              onChange={setFiscalYear}
+              options={years.map(year => ({ value: year, label: year }))}
+              className="bg-emerald-50 border-emerald-200 text-emerald-800"
+            />
+          </div>
         </div>
 
         <div className="flex items-center gap-2">

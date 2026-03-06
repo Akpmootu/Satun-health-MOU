@@ -14,7 +14,7 @@ export function MasterIndicatorForm({ indicator, onClose, onSave }: MasterIndica
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: name === 'order' || name === 'weight' ? Number(value) : value }));
+    setFormData(prev => ({ ...prev, [name]: name === 'order' || name === 'weight' || name === 'max_score' ? Number(value) : value }));
   };
 
   const handleGroupsChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -80,7 +80,7 @@ export function MasterIndicatorForm({ indicator, onClose, onSave }: MasterIndica
           </div>
 
           <div className="space-y-2 md:col-span-2">
-            <label className="text-sm font-medium text-slate-700">เกณฑ์เป้าหมาย</label>
+            <label className="text-sm font-medium text-slate-700">เกณฑ์ระดับ 5 (Level 5 Criteria)</label>
             <input 
               type="text" 
               name="target_criteria"
@@ -100,6 +100,18 @@ export function MasterIndicatorForm({ indicator, onClose, onSave }: MasterIndica
               onChange={handleChange}
               required
               step="0.01"
+              className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">คะแนนเต็ม (Max Score)</label>
+            <input 
+              type="number" 
+              name="max_score"
+              value={formData.max_score || 5}
+              onChange={handleChange}
+              required
               className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
             />
           </div>

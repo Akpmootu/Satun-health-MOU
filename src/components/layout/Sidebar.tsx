@@ -38,6 +38,12 @@ export function Sidebar({ isOpen, setIsOpen, activeTab, setActiveTab, onGoHome, 
       ]
     },
     {
+      title: 'ส่วนรายงาน',
+      items: [
+        { id: 'export', label: 'ส่งออกข้อมูล (Excel)', icon: FileText },
+      ]
+    },
+    {
       title: 'ส่วนตัว',
       items: [
         { id: 'profile', label: 'ข้อมูลส่วนตัว', icon: UserIcon },

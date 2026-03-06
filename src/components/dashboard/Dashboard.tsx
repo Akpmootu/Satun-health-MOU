@@ -238,6 +238,54 @@ export function Dashboard({ data, fiscalYear, timeframe }: DashboardProps) {
         <StatCard title="รอประเมิน (รายการ)" value={stats.pending} icon={Clock} colorClass="bg-amber-500 shadow-amber-500/20" delay={0.4} />
       </div>
 
+      {/* Usage Statistics */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.45 }}
+        className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100"
+      >
+        <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+          <Activity size={20} className="text-indigo-600" />
+          สถานะการบันทึกข้อมูลรายหน่วยงาน
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {AREAS.map(area => {
+            let completed = 0;
+            filteredData.forEach(ind => {
+              const res = ind.results[timeframe]?.[area];
+              if (res && (res.status === 'ผ่าน' || res.status === 'ไม่ผ่าน' || res.score !== null)) {
+                completed++;
+              }
+            });
+            const percentage = filteredData.length > 0 ? Math.round((completed / filteredData.length) * 100) : 0;
+            
+            return (
+              <div key={area} className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-medium text-slate-700">{area.replace('คปสอ.', '')}</span>
+                  <span className={cn(
+                    "text-xs font-bold px-2 py-0.5 rounded-full",
+                    percentage === 100 ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600"
+                  )}>
+                    {percentage}%
+                  </span>
+                </div>
+                <div className="w-full bg-slate-200 rounded-full h-2">
+                  <div 
+                    className={cn("h-2 rounded-full transition-all duration-500", 
+                      percentage === 100 ? "bg-emerald-500" : "bg-indigo-500"
+                    )} 
+                    style={{ width: `${percentage}%` }}
+                  ></div>
+                </div>
+                <p className="text-xs text-slate-500 mt-2 text-right">{completed} / {filteredData.length} รายการ</p>
+              </div>
+            );
+          })}
+        </div>
+      </motion.div>
+
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Success Rate Gauge */}
@@ -429,6 +477,72 @@ export function Dashboard({ data, fiscalYear, timeframe }: DashboardProps) {
                 <Bar dataKey="ไม่ผ่าน" stackId="a" fill="#f43f5e" radius={[4, 4, 0, 0]} animationDuration={1000} className="hover:opacity-80 transition-opacity cursor-pointer" />
               </BarChart>
             </ResponsiveContainer>
+          </div>
+        </motion.div>
+
+        {/* Individual Indicator Performance */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.0 }}
+          className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 col-span-1 lg:col-span-3 min-w-0"
+        >
+          <h3 className="text-lg font-semibold text-slate-800 mb-6 flex items-center gap-2">
+            <Award size={20} className="text-indigo-600" />
+            ผลการดำเนินงานรายตัวชี้วัด (Top 5)
+          </h3>
+          <div className="space-y-8">
+            {filteredData.slice(0, 5).map(indicator => {
+              const indicatorData = AREAS.map(area => ({
+                name: area.replace('คปสอ.', ''),
+                score: indicator.results[timeframe]?.[area]?.score || 0,
+                status: indicator.results[timeframe]?.[area]?.status || 'รอประเมิน'
+              }));
+
+              return (
+                <div key={indicator.id} className="border-b border-slate-100 pb-6 last:border-0 last:pb-0">
+                  <div className="mb-4">
+                    <span className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded mr-2">
+                      {indicator.order}
+                    </span>
+                    <span className="font-medium text-slate-800">{indicator.name}</span>
+                  </div>
+                  <div className="h-48 w-full">
+                    <ResponsiveContainer width="100%" height="100%" debounce={50}>
+                      <BarChart data={indicatorData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
+                        <YAxis domain={[0, 5]} tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
+                        <RechartsTooltip 
+                          cursor={{ fill: '#f8fafc' }}
+                          content={({ active, payload, label }) => {
+                            if (active && payload && payload.length) {
+                              return (
+                                <div className="bg-white p-2 rounded-lg shadow-md border border-slate-100 text-xs">
+                                  <p className="font-bold mb-1">{label}</p>
+                                  <p>คะแนน: <span className="text-indigo-600 font-bold">{payload[0].value}</span></p>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        <Bar dataKey="score" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={40}>
+                          {indicatorData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.score >= 4 ? '#10b981' : entry.score >= 3 ? '#f59e0b' : '#f43f5e'} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              );
+            })}
+            {filteredData.length > 5 && (
+              <div className="text-center pt-4">
+                <p className="text-sm text-slate-500">แสดง 5 รายการแรกจากทั้งหมด {filteredData.length} รายการ</p>
+              </div>
+            )}
           </div>
         </motion.div>
       </div>

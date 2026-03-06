@@ -16,6 +16,7 @@ import { NewsAnnouncement } from './components/common/NewsAnnouncement';
 import { PrivacyPolicyModal } from './components/common/PrivacyPolicyModal';
 import { Calendar } from './components/dashboard/Calendar';
 import { PrivacySettings } from './components/settings/PrivacySettings';
+import { ExportData } from './components/dashboard/ExportData';
 import { Profile } from './components/settings/Profile';
 import { Indicator, TIMEFRAMES, User } from './types';
 import { motion, AnimatePresence } from 'motion/react';
@@ -673,6 +674,18 @@ export default function App() {
                 transition={{ duration: 0.2 }}
               >
                 <Calendar />
+              </motion.div>
+            )}
+
+            {activeTab === 'export' && (
+              <motion.div
+                key="export"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <ExportData indicators={data} fiscalYear={fiscalYear} />
               </motion.div>
             )}
 

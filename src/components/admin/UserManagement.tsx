@@ -51,7 +51,7 @@ export function UserManagement() {
           </div>
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">สิทธิ์การใช้งาน (Role)</label>
-            <select id="swal-input3" class="swal2-select !w-full !m-0 !text-sm">
+            <select id="swal-input3" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all">
               <option value="user">ผู้ใช้งานทั่วไป (User)</option>
               <option value="admin">ผู้ดูแลระบบ (Admin)</option>
               <option value="กลุ่มงาน สสจ.">กลุ่มงาน สสจ.</option>
@@ -59,7 +59,7 @@ export function UserManagement() {
           </div>
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">หน่วยงาน (Unit)</label>
-            <select id="swal-input4" class="swal2-select !w-full !m-0 !text-sm">
+            <select id="swal-input4" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all">
               ${AREAS.map(area => `<option value="${area}">${area}</option>`).join('')}
             </select>
           </div>
@@ -137,7 +137,7 @@ export function UserManagement() {
           </div>
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">สิทธิ์การใช้งาน (Role)</label>
-            <select id="swal-input3" class="swal2-select !w-full !m-0 !text-sm">
+            <select id="swal-input3" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all">
               <option value="user" ${user.role === 'user' ? 'selected' : ''}>ผู้ใช้งานทั่วไป (User)</option>
               <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>ผู้ดูแลระบบ (Admin)</option>
               <option value="กลุ่มงาน สสจ." ${user.role === 'กลุ่มงาน สสจ.' ? 'selected' : ''}>กลุ่มงาน สสจ.</option>
@@ -145,7 +145,7 @@ export function UserManagement() {
           </div>
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">หน่วยงาน (Unit)</label>
-            <select id="swal-input4" class="swal2-select !w-full !m-0 !text-sm">
+            <select id="swal-input4" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all">
               ${AREAS.map(area => `<option value="${area}" ${user.unit === area ? 'selected' : ''}>${area}</option>`).join('')}
             </select>
           </div>

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Edit2, Search, Filter, Plus, CheckCircle2, XCircle, Clock, ArrowUpDown, Info, ChevronDown, ChevronUp, ShieldCheck, AlertCircle, History } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import Swal from 'sweetalert2';
+import { CustomSelect } from '../common/CustomSelect';
 
 interface IndicatorsListProps {
   data: Indicator[];
@@ -347,77 +348,71 @@ export function IndicatorsList({ data, fiscalYear, timeframe, onEdit, onVerify, 
           </div>
           
           <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-            <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5">
-              <Filter size={16} className="text-slate-400" />
-              <select 
+            <div className="w-48">
+              <CustomSelect
                 value={selectedArea}
-                onChange={(e) => setSelectedArea(e.target.value)}
+                onChange={setSelectedArea}
+                options={AREAS.map(area => ({ value: area, label: area }))}
                 disabled={user?.role === 'user'}
-                className="bg-transparent text-sm focus:outline-none cursor-pointer appearance-none pr-4 disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                {AREAS.map(area => (
-                  <option key={area} value={area}>{area}</option>
-                ))}
-              </select>
+                icon={Filter}
+              />
             </div>
 
-            <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5">
-              <span className="text-sm text-slate-500">กลุ่มงาน:</span>
-              <select 
+            <div className="w-48">
+              <CustomSelect
+                label="กลุ่มงาน:"
                 value={responsibleGroupFilter}
-                onChange={(e) => setResponsibleGroupFilter(e.target.value)}
-                className="bg-transparent text-sm focus:outline-none cursor-pointer appearance-none pr-4 font-medium max-w-[150px] truncate"
-              >
-                <option value="ทั้งหมด">ทั้งหมด</option>
-                {RESPONSIBLE_GROUPS.map(group => (
-                  <option key={group.name} value={group.name}>{group.name}</option>
-                ))}
-              </select>
+                onChange={setResponsibleGroupFilter}
+                options={[
+                  { value: 'ทั้งหมด', label: 'ทั้งหมด' },
+                  ...RESPONSIBLE_GROUPS.map(group => ({ value: group.name, label: group.name }))
+                ]}
+              />
             </div>
 
-            <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5">
-              <span className="text-sm text-slate-500">คะแนน:</span>
-              <select 
+            <div className="w-40">
+              <CustomSelect
+                label="คะแนน:"
                 value={scoreFilter}
-                onChange={(e) => setScoreFilter(e.target.value)}
-                className="bg-transparent text-sm focus:outline-none cursor-pointer appearance-none pr-4 font-medium"
-              >
-                <option value="ทั้งหมด">ทั้งหมด</option>
-                <option value="5">5 คะแนน</option>
-                <option value="4">4 คะแนน</option>
-                <option value="3">3 คะแนน</option>
-                <option value="2">2 คะแนน</option>
-                <option value="1">1 คะแนน</option>
-                <option value=">=3">ผ่านเกณฑ์ (≥3)</option>
-                <option value="<3">ต่ำกว่าเกณฑ์ (&lt;3)</option>
-              </select>
+                onChange={setScoreFilter}
+                options={[
+                  { value: 'ทั้งหมด', label: 'ทั้งหมด' },
+                  { value: '5', label: '5 คะแนน' },
+                  { value: '4', label: '4 คะแนน' },
+                  { value: '3', label: '3 คะแนน' },
+                  { value: '2', label: '2 คะแนน' },
+                  { value: '1', label: '1 คะแนน' },
+                  { value: '>=3', label: 'ผ่านเกณฑ์ (≥3)' },
+                  { value: '<3', label: 'ต่ำกว่าเกณฑ์ (<3)' },
+                ]}
+              />
             </div>
 
-            <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5">
-              <span className="text-sm text-slate-500">สถานะ:</span>
-              <select 
+            <div className="w-40">
+              <CustomSelect
+                label="สถานะ:"
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-transparent text-sm focus:outline-none cursor-pointer appearance-none pr-4 font-medium"
-              >
-                <option value="ทั้งหมด">ทั้งหมด</option>
-                <option value="ผ่าน" className="text-emerald-600">ผ่าน</option>
-                <option value="ไม่ผ่าน" className="text-rose-600">ไม่ผ่าน</option>
-                <option value="รอประเมิน" className="text-amber-600">รอประเมิน</option>
-              </select>
+                onChange={setStatusFilter}
+                options={[
+                  { value: 'ทั้งหมด', label: 'ทั้งหมด' },
+                  { value: 'ผ่าน', label: 'ผ่าน', className: 'text-emerald-600' },
+                  { value: 'ไม่ผ่าน', label: 'ไม่ผ่าน', className: 'text-rose-600' },
+                  { value: 'รอประเมิน', label: 'รอประเมิน', className: 'text-amber-600' },
+                ]}
+              />
             </div>
 
-            <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5">
-              <ArrowUpDown size={16} className="text-slate-400" />
-              <select 
+            <div className="w-48">
+              <CustomSelect
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortOption)}
-                className="bg-transparent text-sm focus:outline-none cursor-pointer appearance-none pr-4"
-              >
-                <option value="order">เรียงตามลำดับ</option>
-                <option value="name">เรียงตามชื่อ (ก-ฮ)</option>
-                <option value="score">เรียงตามคะแนน (มากไปน้อย)</option>
-              </select>
+                onChange={(val) => setSortBy(val as SortOption)}
+                options={[
+                  { value: 'order', label: 'เรียงตามลำดับ' },
+                  { value: 'name', label: 'เรียงตามชื่อ (ก-ฮ)' },
+                  { value: 'score', label: 'เรียงตามคะแนน (มากไปน้อย)' },
+                ]}
+                icon={ArrowUpDown}
+              />
             </div>
 
             {user?.role === 'admin' && onAddMaster && (
@@ -437,14 +432,42 @@ export function IndicatorsList({ data, fiscalYear, timeframe, onEdit, onVerify, 
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-sm font-semibold">
-                <th className="p-4 w-16 text-center">ลำดับ</th>
-                <th className="p-4 min-w-[300px]">ตัวชี้วัด MOU</th>
-                <th className="p-4 w-32 text-center">เป้าหมาย</th>
-                <th className="p-4 w-32 text-center">ผลงาน (%)</th>
-                <th className="p-4 w-24 text-center">คะแนน</th>
-                <th className="p-4 w-32 text-center">ถ่วงน้ำหนัก</th>
-                <th className="p-4 w-32 text-center">สถานะ</th>
-                <th className="p-4 w-24 text-center">จัดการ</th>
+                <th className="p-4 w-16 text-center align-top">
+                  <div>ลำดับ</div>
+                  <div className="text-[10px] font-normal text-slate-400 uppercase tracking-wider mt-0.5">Order</div>
+                </th>
+                <th className="p-4 min-w-[300px] align-top">
+                  <div>ตัวชี้วัด MOU</div>
+                  <div className="text-[10px] font-normal text-slate-400 uppercase tracking-wider mt-0.5">Indicator</div>
+                </th>
+                <th className="p-4 min-w-[200px] align-top">
+                  <div>เกณฑ์ระดับ 5</div>
+                  <div className="text-[10px] font-normal text-slate-400 uppercase tracking-wider mt-0.5">Level 5 Criteria</div>
+                </th>
+                <th className="p-4 w-20 text-center align-top">
+                  <div>น้ำหนัก</div>
+                  <div className="text-[10px] font-normal text-slate-400 uppercase tracking-wider mt-0.5">Weight</div>
+                </th>
+                <th className="p-4 w-20 text-center align-top">
+                  <div>เต็ม</div>
+                  <div className="text-[10px] font-normal text-slate-400 uppercase tracking-wider mt-0.5">Max</div>
+                </th>
+                <th className="p-4 w-24 text-center align-top">
+                  <div>ผลงาน</div>
+                  <div className="text-[10px] font-normal text-slate-400 uppercase tracking-wider mt-0.5">Result (%)</div>
+                </th>
+                <th className="p-4 w-20 text-center align-top">
+                  <div>คะแนน</div>
+                  <div className="text-[10px] font-normal text-slate-400 uppercase tracking-wider mt-0.5">Score</div>
+                </th>
+                <th className="p-4 w-32 text-center align-top">
+                  <div>สถานะ</div>
+                  <div className="text-[10px] font-normal text-slate-400 uppercase tracking-wider mt-0.5">Status</div>
+                </th>
+                <th className="p-4 w-24 text-center align-top">
+                  <div>จัดการ</div>
+                  <div className="text-[10px] font-normal text-slate-400 uppercase tracking-wider mt-0.5">Action</div>
+                </th>
               </tr>
             </thead>
             <tbody className="text-sm divide-y divide-slate-100">
@@ -461,48 +484,57 @@ export function IndicatorsList({ data, fiscalYear, timeframe, onEdit, onVerify, 
                         key={item.id} 
                         className={cn("transition-colors group", getRowBackground(result.status))}
                       >
-                        <td className="p-4 text-center font-medium text-slate-500">{item.order}</td>
-                        <td className="p-4">
-                          <p className="text-slate-800 font-medium line-clamp-2 group-hover:line-clamp-none transition-all">{item.name}</p>
-                          <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                            <span className={cn("text-xs font-semibold px-2 py-0.5 rounded-md border", getExcellenceCategory(item.order).bg, getExcellenceCategory(item.order).color, getExcellenceCategory(item.order).border)}>
+                        <td className="p-4 text-center font-medium text-slate-500 align-top pt-5">{item.order}</td>
+                        <td className="p-4 align-top">
+                          <div className="flex flex-wrap items-center gap-2 mb-2">
+                            <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-md border shadow-sm", getExcellenceCategory(item.order).bg, getExcellenceCategory(item.order).color, getExcellenceCategory(item.order).border)}>
                               {getExcellenceCategory(item.order).name}
                             </span>
                             {item.responsible_groups?.map(group => {
                               const groupInfo = RESPONSIBLE_GROUPS.find(g => g.name === group);
                               return (
-                                <span key={group} className={cn("text-xs font-semibold px-2 py-0.5 rounded-md border", groupInfo?.color || "bg-slate-100 text-slate-700 border-slate-200")}>
+                                <span key={group} className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-md border", groupInfo?.color || "bg-slate-100 text-slate-700 border-slate-200")}>
                                   {group}
                                 </span>
                               );
                             })}
                           </div>
+                          <p className="text-slate-800 font-semibold text-base leading-relaxed">{item.name}</p>
                         </td>
-                        <td className="p-4 text-center text-slate-600">{result.target ?? '-'}</td>
-                        <td className="p-4 text-center font-medium text-slate-700">{result.result_percentage ?? '-'}</td>
-                        <td className="p-4 text-center">
+                        <td className="p-4 align-top">
+                          <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 text-sm text-slate-700 leading-relaxed font-medium">
+                            {item.target_criteria || '-'}
+                          </div>
+                        </td>
+                        <td className="p-4 text-center font-medium text-slate-600 align-top pt-5">
+                          {item.weight}
+                        </td>
+                        <td className="p-4 text-center font-medium text-slate-600 align-top pt-5">
+                          {item.max_score || 5}
+                        </td>
+                        <td className="p-4 text-center font-bold text-slate-700 align-top pt-5 text-base">
+                          {result.result_percentage ?? '-'}
+                        </td>
+                        <td className="p-4 text-center align-top pt-4">
                           <span 
-                            className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-700 font-bold border border-transparent"
+                            className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-slate-100 text-slate-700 font-bold border border-transparent shadow-sm text-sm"
                             style={getScoreStyle(result.score as number)}
                           >
                             {result.score ?? '-'}
                           </span>
                         </td>
-                        <td className="p-4 text-center font-medium text-emerald-600">
-                          {result.weighted_score ?? '-'}
-                        </td>
-                        <td className="p-4 text-center">
-                          <div className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium", getStatusClass(result.status))}>
+                        <td className="p-4 text-center align-top pt-4">
+                          <div className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium shadow-sm", getStatusClass(result.status))}>
                             {getStatusIcon(result.status)}
                             <span>{result.status}</span>
                           </div>
                           {result.feedback && (
-                            <div className="mt-2 text-xs text-rose-600 bg-rose-50 p-1.5 rounded-md border border-rose-100 text-left line-clamp-2" title={result.feedback}>
+                            <div className="mt-2 text-xs text-rose-600 bg-rose-50 p-2 rounded-lg border border-rose-100 text-left shadow-sm">
                               <strong>ข้อเสนอแนะ:</strong> {result.feedback}
                             </div>
                           )}
                         </td>
-                        <td className="p-4 text-center">
+                        <td className="p-4 text-center align-top pt-4">
                           <div className="flex items-center justify-center gap-2">
                             {user?.role === 'user' && !(result.status === 'ผ่าน' || result.status === 'ไม่ผ่าน' || result.status === 'รอยืนยัน') && (
                               <button 
