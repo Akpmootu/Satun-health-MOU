@@ -1,37 +1,55 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { ShieldCheck, User as UserIcon, Lock, ArrowRight } from 'lucide-react';
+import { ShieldCheck, User as UserIcon, Lock, ArrowRight, Eye, EyeOff, Home } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { User } from '../../types';
 import Swal from 'sweetalert2';
 
 interface LoginScreenProps {
   onLogin: (user: User) => void;
+  onGoHome: () => void;
 }
 
-export function LoginScreen({ onLogin }: LoginScreenProps) {
+export function LoginScreen({ onLogin, onGoHome }: LoginScreenProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const getPasswordStrength = (pass: string) => {
+    if (!pass) return 0;
+    let strength = 0;
+    if (pass.length >= 6) strength += 1;
+    if (pass.length >= 10) strength += 1;
+    if (/[A-Z]/.test(pass)) strength += 1;
+    if (/[0-9]/.test(pass)) strength += 1;
+    if (/[^A-Za-z0-9]/.test(pass)) strength += 1;
+    return strength;
+  };
+
+  const strength = getPasswordStrength(password);
+  
+  const getStrengthColor = (s: number) => {
+    if (s === 0) return 'bg-slate-200';
+    if (s <= 2) return 'bg-red-500';
+    if (s <= 3) return 'bg-yellow-500';
+    return 'bg-emerald-500';
+  };
+
+  const getStrengthText = (s: number) => {
+    if (s === 0) return '';
+    if (s <= 2) return 'ไม่ปลอดภัย (Unsecure)';
+    if (s <= 3) return 'พอใช้';
+    return 'ปลอดภัย (Secure)';
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username || !password || !confirmPassword) {
+    if (!username || !password) {
       Swal.fire({
         icon: 'warning',
         title: 'กรุณากรอกข้อมูล',
-        text: 'โปรดกรอกชื่อผู้ใช้, รหัสผ่าน และยืนยันรหัสผ่าน',
-        confirmButtonColor: '#10b981'
-      });
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      Swal.fire({
-        icon: 'error',
-        title: 'รหัสผ่านไม่ตรงกัน',
-        text: 'กรุณากรอกรหัสผ่านและยืนยันรหัสผ่านให้ตรงกัน',
+        text: 'โปรดกรอกชื่อผู้ใช้และรหัสผ่าน',
         confirmButtonColor: '#10b981'
       });
       return;
@@ -83,6 +101,14 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
         transition={{ duration: 0.5 }}
         className="w-full max-w-md bg-white rounded-3xl shadow-xl border border-slate-100 p-8 relative z-10"
       >
+        <button 
+          onClick={onGoHome}
+          className="absolute top-4 left-4 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-colors"
+          title="กลับหน้าหลัก"
+        >
+          <Home size={20} />
+        </button>
+
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-600 mb-4 shadow-inner">
             <ShieldCheck size={32} />
@@ -115,29 +141,41 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
                 <Lock size={18} className="text-slate-400" />
               </div>
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                className="w-full pl-10 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
                 placeholder="กรอกรหัสผ่าน"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-700 ml-1">ยืนยันรหัสผ่าน</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Lock size={18} className="text-slate-400" />
+            
+            {/* Password Strength Meter */}
+            {password && (
+              <div className="mt-2 space-y-1">
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-500">ความปลอดภัยของข้อมูล</span>
+                  <span className={`font-medium ${
+                    strength <= 2 ? 'text-red-500' : 
+                    strength <= 3 ? 'text-yellow-600' : 'text-emerald-600'
+                  }`}>
+                    {getStrengthText(strength)}
+                  </span>
+                </div>
+                <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full transition-all duration-300 ${getStrengthColor(strength)}`}
+                    style={{ width: `${(strength / 5) * 100}%` }}
+                  />
+                </div>
               </div>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
-                placeholder="ยืนยันรหัสผ่าน"
-              />
-            </div>
+            )}
           </div>
 
           <button

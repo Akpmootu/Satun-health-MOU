@@ -477,7 +477,10 @@ export default function App() {
   if (view === 'login') {
     return (
       <>
-        <LoginScreen onLogin={handleLogin} />
+        <LoginScreen 
+          onLogin={handleLogin} 
+          onGoHome={() => setView('landing')}
+        />
         <AnimatePresence>
           {showPrivacyPolicy && (
             <PrivacyPolicyModal onAccept={handleAcceptPrivacy} />
