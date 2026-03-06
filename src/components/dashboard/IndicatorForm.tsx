@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Indicator, AreaResult, AREAS, User } from '../../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Save, ChevronRight, CheckCircle2, AlertCircle, Clock, XCircle, Award } from 'lucide-react';
+import { ArrowLeft, Save, ChevronRight, CheckCircle2, AlertCircle, Clock, XCircle, Award, Info } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import Swal from 'sweetalert2';
 
@@ -170,6 +170,22 @@ export function IndicatorForm({ indicator, timeframe, onClose, onSave, user }: I
   
   const isReadOnly = user?.role === 'กลุ่มงาน สสจ.' || (user?.role !== 'admin' && (currentResult.status === 'ผ่าน' || currentResult.status === 'ไม่ผ่าน' || currentResult.status === 'รอยืนยัน'));
 
+  const getExcellenceCategory = (order: string | number) => {
+    const num = parseFloat(order.toString());
+    if ([1, 2, 3, 4, 6, 9].includes(num)) {
+      return { name: 'PP Excellence', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', description: 'ส่งเสริมสุขภาพ ป้องกันโรค และคุ้มครองผู้บริโภคเป็นเลิศ', detail: 'เน้นการสร้างเสริมสุขภาพ การคัดกรองโรค และการจัดการปัจจัยเสี่ยง' };
+    } else if ([7.1, 7.2, 8, 10, 11, 13, 15].includes(num)) {
+      return { name: 'Service Excellence', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200', description: 'บริการเป็นเลิศ', detail: 'เน้นคุณภาพการรักษาพยาบาล ระบบส่งต่อ ระบบบริการปฐมภูมิ และการแพทย์ทางเลือก' };
+    } else if ([12].includes(num)) {
+      return { name: 'People Excellence', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200', description: 'บุคลากรเป็นเลิศ', detail: 'เน้นการพัฒนาศักยภาพบุคลากรทางการแพทย์ และเครือข่ายสุขภาพภาคประชาชน' };
+    } else if ([5, 14, 16, 17].includes(num)) {
+      return { name: 'Governance Excellence', color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200', description: 'บริหารจัดการเป็นเลิศ', detail: 'เน้นการบริหารจัดการระบบข้อมูล สุขาภิบาลสิ่งแวดล้อม การเงินการคลัง และธรรมาภิบาล' };
+    }
+    return { name: 'ทั่วไป', color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200', description: '', detail: '' };
+  };
+
+  const excellence = getExcellenceCategory(formData.order);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -219,23 +235,48 @@ export function IndicatorForm({ indicator, timeframe, onClose, onSave, user }: I
                   <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center font-bold text-xl text-indigo-600 shrink-0 border border-slate-100">
                     {formData.order}
                   </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-slate-800 mb-2">{formData.name}</h3>
-                    <div className="flex flex-wrap gap-4 text-sm text-slate-600">
-                      <span className="flex items-center gap-1.5 bg-white px-3 py-1 rounded-lg border border-slate-200">
-                        <span className="text-slate-400">เป้าหมาย:</span>
-                        <span className="font-semibold text-slate-800">{formData.target_criteria}</span>
-                      </span>
-                      <span className="flex items-center gap-1.5 bg-white px-3 py-1 rounded-lg border border-slate-200">
-                        <span className="text-slate-400">น้ำหนัก:</span>
-                        <span className="font-semibold text-slate-800">{formData.weight}</span>
-                      </span>
-                      <span className="flex items-center gap-1.5 bg-white px-3 py-1 rounded-lg border border-slate-200">
-                        <span className="text-slate-400">ผู้รับผิดชอบ:</span>
-                        <span className="font-semibold text-slate-800">{formData.responsible_group}</span>
-                      </span>
+                  <div className="flex-1">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                       <span className={cn("text-xs font-bold px-2 py-0.5 rounded-md border shadow-sm", excellence.bg, excellence.color, excellence.border)}>
+                          {excellence.name}
+                       </span>
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-800 mb-3">{formData.name}</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-slate-600">
+                      <div className="bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-sm">
+                        <span className="block text-xs text-slate-400 mb-1 uppercase tracking-wider">เกณฑ์ระดับ 5 (Level 5 Criteria)</span>
+                        <span className="font-semibold text-slate-800 text-base">{formData.target_criteria}</span>
+                      </div>
+                      <div className="bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-sm">
+                        <span className="block text-xs text-slate-400 mb-1 uppercase tracking-wider">น้ำหนัก (Weight)</span>
+                        <span className="font-semibold text-slate-800 text-base">{formData.weight}</span>
+                      </div>
+                      <div className="bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-sm">
+                        <span className="block text-xs text-slate-400 mb-1 uppercase tracking-wider">ผู้รับผิดชอบ (Responsible Group)</span>
+                        <span className="font-semibold text-slate-800 text-base">{formData.responsible_group}</span>
+                      </div>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* 4+1 Excellence Note */}
+              <div className="bg-indigo-50/50 rounded-2xl p-6 mb-8 border border-indigo-100">
+                <h3 className="text-sm font-bold text-indigo-800 mb-3 flex items-center gap-2">
+                  <Info size={18} className="text-indigo-600" />
+                  หมายเหตุ: ความหมายของ 4+1 Excellence
+                </h3>
+                <div className="bg-white/60 rounded-xl p-4 border border-indigo-100/50">
+                   <div className="flex items-start gap-3">
+                      <div className={cn("w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0", excellence.bg, excellence.color, excellence.border, "border")}>
+                        {excellence.name.charAt(0)}
+                      </div>
+                      <div>
+                        <h4 className={cn("font-bold text-sm mb-1", excellence.color)}>{excellence.name}</h4>
+                        <p className="text-slate-700 text-sm font-medium mb-1">{excellence.description}</p>
+                        <p className="text-slate-500 text-xs italic">"{excellence.detail}"</p>
+                      </div>
+                   </div>
                 </div>
               </div>
 
