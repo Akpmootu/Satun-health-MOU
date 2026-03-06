@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, AREAS, Indicator, RESPONSIBLE_GROUPS } from '../../types';
+import { User, AREAS, RESPONSIBLE_GROUPS } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { motion } from 'motion/react';
 import { Users, Plus, Edit2, Trash2, Shield, ShieldAlert, Briefcase } from 'lucide-react';
@@ -7,12 +7,10 @@ import Swal from 'sweetalert2';
 
 export function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
-  const [indicators, setIndicators] = useState<Indicator[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchUsers();
-    fetchIndicators();
   }, []);
 
   const fetchUsers = async () => {
@@ -35,20 +33,6 @@ export function UserManagement() {
       });
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const fetchIndicators = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('indicators')
-        .select('id, name')
-        .order('order_num', { ascending: true });
-
-      if (error) throw error;
-      setIndicators(data || []);
-    } catch (error) {
-      console.error('Error fetching indicators:', error);
     }
   };
 
@@ -79,13 +63,6 @@ export function UserManagement() {
               ${AREAS.map(area => `<option value="${area}">${area}</option>`).join('')}
             </select>
           </div>
-          <div id="indicator-container" style="display: none;">
-            <label class="block text-sm font-medium text-slate-700 mb-1">ตัวชี้วัดที่รับผิดชอบ (เลือกได้หลายข้อ)</label>
-            <select id="swal-input5" class="swal2-select !w-full !m-0 !text-sm" multiple style="height: 120px;">
-              ${indicators.map(ind => `<option value="${ind.id}">${ind.name}</option>`).join('')}
-            </select>
-            <p class="text-xs text-slate-500 mt-1">กด Ctrl (หรือ Cmd) ค้างไว้เพื่อเลือกหลายรายการ</p>
-          </div>
         </div>
       `,
       focusConfirm: false,
@@ -96,7 +73,6 @@ export function UserManagement() {
       didOpen: () => {
         const roleSelect = document.getElementById('swal-input3') as HTMLSelectElement;
         const unitSelect = document.getElementById('swal-input4') as HTMLSelectElement;
-        const indContainer = document.getElementById('indicator-container');
         
         const areasHtml = `${AREAS.map(area => `<option value="${area}">${area}</option>`).join('')}`;
         const groupsHtml = `${RESPONSIBLE_GROUPS.map(group => `<option value="${group.name}">${group.name}</option>`).join('')}`;
@@ -104,10 +80,8 @@ export function UserManagement() {
         roleSelect.addEventListener('change', (e) => {
           const selectedRole = (e.target as HTMLSelectElement).value;
           if (selectedRole === 'กลุ่มงาน สสจ.') {
-            indContainer?.style.setProperty('display', 'block');
             unitSelect.innerHTML = groupsHtml;
           } else {
-            indContainer?.style.setProperty('display', 'none');
             unitSelect.innerHTML = areasHtml;
           }
         });
@@ -175,13 +149,6 @@ export function UserManagement() {
               ${AREAS.map(area => `<option value="${area}" ${user.unit === area ? 'selected' : ''}>${area}</option>`).join('')}
             </select>
           </div>
-          <div id="indicator-container" style="display: ${user.role === 'กลุ่มงาน สสจ.' ? 'block' : 'none'};">
-            <label class="block text-sm font-medium text-slate-700 mb-1">ตัวชี้วัดที่รับผิดชอบ (เลือกได้หลายข้อ)</label>
-            <select id="swal-input5" class="swal2-select !w-full !m-0 !text-sm" multiple style="height: 120px;">
-              ${indicators.map(ind => `<option value="${ind.id}" ${(user.assigned_indicators || []).includes(ind.id) ? 'selected' : ''}>${ind.name}</option>`).join('')}
-            </select>
-            <p class="text-xs text-slate-500 mt-1">กด Ctrl (หรือ Cmd) ค้างไว้เพื่อเลือกหลายรายการ</p>
-          </div>
         </div>
       `,
       focusConfirm: false,
@@ -192,7 +159,6 @@ export function UserManagement() {
       didOpen: () => {
         const roleSelect = document.getElementById('swal-input3') as HTMLSelectElement;
         const unitSelect = document.getElementById('swal-input4') as HTMLSelectElement;
-        const indContainer = document.getElementById('indicator-container');
         
         const areasHtml = `${AREAS.map(area => `<option value="${area}" ${user.unit === area ? 'selected' : ''}>${area}</option>`).join('')}`;
         const groupsHtml = `${RESPONSIBLE_GROUPS.map(group => `<option value="${group.name}" ${user.unit === group.name ? 'selected' : ''}>${group.name}</option>`).join('')}`;
@@ -207,10 +173,8 @@ export function UserManagement() {
         roleSelect.addEventListener('change', (e) => {
           const selectedRole = (e.target as HTMLSelectElement).value;
           if (selectedRole === 'กลุ่มงาน สสจ.') {
-            indContainer?.style.setProperty('display', 'block');
             unitSelect.innerHTML = groupsHtml;
           } else {
-            indContainer?.style.setProperty('display', 'none');
             unitSelect.innerHTML = areasHtml;
           }
         });

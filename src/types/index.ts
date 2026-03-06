@@ -44,7 +44,6 @@ export interface User {
   username: string;
   role: 'admin' | 'user' | 'กลุ่มงาน สสจ.';
   unit: string;
-  assigned_indicators?: string[]; // Array of indicator IDs
 }
 
 export const RESPONSIBLE_GROUPS = [

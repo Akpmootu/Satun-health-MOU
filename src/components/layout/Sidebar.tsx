@@ -1,4 +1,4 @@
-import { Menu, X, Home, BarChart2, FileText, Settings, LogOut, Briefcase, Users, LayoutDashboard, Edit3 } from 'lucide-react';
+import { Menu, X, Home, BarChart2, FileText, Settings, LogOut, Briefcase, Users, LayoutDashboard, Edit3, Calendar, User as UserIcon } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { User } from '../../types';
@@ -27,6 +27,7 @@ export function Sidebar({ isOpen, setIsOpen, activeTab, setActiveTab, onGoHome, 
       title: 'ส่วนแดชบอร์ด',
       items: [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'calendar', label: 'ปฏิทินกิจกรรม', icon: Calendar },
       ]
     },
     {
@@ -34,6 +35,13 @@ export function Sidebar({ isOpen, setIsOpen, activeTab, setActiveTab, onGoHome, 
       items: [
         { id: 'indicators', label: 'ตัวชี้วัด MOU', icon: Edit3 },
         ...(user?.role === 'admin' || user?.role === 'กลุ่มงาน สสจ.' ? [{ id: 'verify', label: 'ตรวจสอบข้อมูล', icon: FileText }] : [])
+      ]
+    },
+    {
+      title: 'ส่วนตัว',
+      items: [
+        { id: 'profile', label: 'ข้อมูลส่วนตัว', icon: UserIcon },
+        { id: 'settings', label: 'ตั้งค่าความเป็นส่วนตัว', icon: Settings },
       ]
     }
   ];
@@ -146,9 +154,28 @@ export function Sidebar({ isOpen, setIsOpen, activeTab, setActiveTab, onGoHome, 
 
         <div className="p-4 border-t border-slate-100">
           {isOpen && user && (
-            <div className="mb-4 px-3">
-              <p className="text-sm font-bold text-slate-800 truncate">{user.username}</p>
-              <p className="text-xs text-slate-500 truncate">{user.unit}</p>
+            <div className="mb-4 px-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                    <UserIcon size={16} />
+                  </div>
+                  <div className="overflow-hidden">
+                    <p className="text-sm font-bold text-slate-800 truncate">{user.username}</p>
+                    <p className="text-xs text-slate-500 truncate">{user.unit}</p>
+                  </div>
+                </div>
+              </div>
+              <button 
+                onClick={() => {
+                  setActiveTab('settings');
+                  if (window.innerWidth < 1024) setIsOpen(false);
+                }}
+                className="w-full flex items-center justify-center gap-2 text-xs text-slate-600 hover:text-emerald-600 py-1.5 bg-white border border-slate-200 rounded-lg hover:border-emerald-200 transition-colors"
+              >
+                <Settings size={14} />
+                ตั้งค่าความเป็นส่วนตัว
+              </button>
             </div>
           )}
           <button 

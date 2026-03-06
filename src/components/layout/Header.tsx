@@ -28,6 +28,14 @@ export function Header({ isOpen, setIsOpen, fiscalYear, setFiscalYear, timeframe
   const years = ['2567', '2568', '2569', '2570'];
   const [showNotifications, setShowNotifications] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -61,6 +69,12 @@ export function Header({ isOpen, setIsOpen, fiscalYear, setFiscalYear, timeframe
       </div>
 
       <div className="flex items-center gap-3 sm:gap-6">
+        {/* Date Time Display */}
+        <div className="hidden xl:flex flex-col items-end text-xs text-slate-500 font-medium">
+          <span>{currentDateTime.toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
+          <span>{currentDateTime.toLocaleTimeString('th-TH')}</span>
+        </div>
+
         {/* Timeframe Selector */}
         <div className="hidden lg:flex items-center gap-2">
           <Calendar size={16} className="text-slate-400" />
@@ -101,7 +115,16 @@ export function Header({ isOpen, setIsOpen, fiscalYear, setFiscalYear, timeframe
               )} 
               aria-label="การแจ้งเตือน"
             >
-              <Bell size={20} />
+              <motion.div
+                animate={notifications.length > 0 ? { rotate: [0, -10, 10, -10, 10, 0] } : {}}
+                transition={{ 
+                  duration: 0.5, 
+                  repeat: notifications.length > 0 ? Infinity : 0, 
+                  repeatDelay: 5 
+                }}
+              >
+                <Bell size={20} />
+              </motion.div>
               {notifications.length > 0 && (
                 <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
               )}

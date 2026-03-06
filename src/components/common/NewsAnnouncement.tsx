@@ -31,7 +31,7 @@ export function NewsAnnouncement({ content, onAcknowledge }: NewsAnnouncementPro
         
         <div className="p-8">
           <div className="prose prose-slate max-w-none mb-8 whitespace-pre-line text-slate-700 leading-relaxed">
-            {content.body}
+            {content.body.replace(/\\n/g, '\n')}
           </div>
           
           <button

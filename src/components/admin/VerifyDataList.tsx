@@ -21,7 +21,7 @@ export function VerifyDataList({ data, timeframe, onVerify, user }: VerifyDataLi
     
     data.forEach(indicator => {
       // If user is 'กลุ่มงาน สสจ.', only show their assigned indicators
-      if (user?.role === 'กลุ่มงาน สสจ.' && !user.assigned_indicators?.includes(indicator.id)) {
+      if (user?.role === 'กลุ่มงาน สสจ.' && indicator.responsible_group !== user.unit && !indicator.responsible_groups?.includes(user.unit)) {
         return;
       }
 

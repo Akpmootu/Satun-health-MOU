@@ -14,6 +14,9 @@ import { VerifyDataList } from './components/admin/VerifyDataList';
 import { NewsManagement } from './components/admin/NewsManagement';
 import { NewsAnnouncement } from './components/common/NewsAnnouncement';
 import { PrivacyPolicyModal } from './components/common/PrivacyPolicyModal';
+import { Calendar } from './components/dashboard/Calendar';
+import { PrivacySettings } from './components/settings/PrivacySettings';
+import { Profile } from './components/settings/Profile';
 import { Indicator, TIMEFRAMES, User } from './types';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from './lib/supabase';
@@ -395,7 +398,7 @@ export default function App() {
     let pending = 0;
     
     // If user is 'กลุ่มงาน สสจ.', only count their assigned indicators
-    if (user?.role === 'กลุ่มงาน สสจ.' && !user.assigned_indicators?.includes(item.id)) {
+    if (user?.role === 'กลุ่มงาน สสจ.' && item.responsible_group !== user.unit && !item.responsible_groups?.includes(user.unit)) {
       return count;
     }
 
@@ -438,6 +441,24 @@ export default function App() {
         });
       }
     }
+
+    // Deadline notification
+    const deadline = new Date('2026-03-15');
+    const today = new Date();
+    const diffTime = deadline.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays > 0 && diffDays <= 15) {
+      notifs.push({
+        id: 'deadline',
+        title: 'แจ้งเตือนกำหนดส่ง',
+        message: `เหลือเวลาอีก ${diffDays} วัน จะปิดระบบรับข้อมูล`,
+        time: 'วันนี้',
+        type: 'deadline',
+        action: () => setActiveTab('calendar')
+      });
+    }
+
     return notifs;
   }, [data, timeframe, user, pendingCount]);
 
@@ -638,20 +659,42 @@ export default function App() {
               </motion.div>
             )}
 
-            {(activeTab === 'reports' || activeTab === 'settings') && (
+            {activeTab === 'calendar' && (
               <motion.div
-                key="placeholder"
+                key="calendar"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.2 }}
-                className="flex flex-col items-center justify-center h-[60vh] text-slate-400"
               >
-                <div className="w-24 h-24 mb-6 rounded-full bg-slate-100 flex items-center justify-center">
-                  <span className="text-4xl">🚧</span>
-                </div>
-                <h2 className="text-2xl font-bold text-slate-700 mb-2">กำลังพัฒนาระบบ</h2>
-                <p>เมนูนี้อยู่ระหว่างการพัฒนา จะเปิดให้ใช้งานเร็วๆ นี้</p>
+                <Calendar />
+              </motion.div>
+            )}
+
+            {activeTab === 'profile' && (
+              <motion.div
+                key="profile"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Profile 
+                  user={user}
+                  onNavigateToSettings={() => setActiveTab('settings')}
+                />
+              </motion.div>
+            )}
+
+            {activeTab === 'settings' && (
+              <motion.div
+                key="settings"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <PrivacySettings />
               </motion.div>
             )}
           </AnimatePresence>

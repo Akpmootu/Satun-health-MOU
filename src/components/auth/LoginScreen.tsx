@@ -12,15 +12,26 @@ interface LoginScreenProps {
 export function LoginScreen({ onLogin }: LoginScreenProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username || !password) {
+    if (!username || !password || !confirmPassword) {
       Swal.fire({
         icon: 'warning',
         title: 'กรุณากรอกข้อมูล',
-        text: 'โปรดกรอกชื่อผู้ใช้และรหัสผ่าน',
+        text: 'โปรดกรอกชื่อผู้ใช้, รหัสผ่าน และยืนยันรหัสผ่าน',
+        confirmButtonColor: '#10b981'
+      });
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Swal.fire({
+        icon: 'error',
+        title: 'รหัสผ่านไม่ตรงกัน',
+        text: 'กรุณากรอกรหัสผ่านและยืนยันรหัสผ่านให้ตรงกัน',
         confirmButtonColor: '#10b981'
       });
       return;
@@ -109,6 +120,22 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
                 placeholder="กรอกรหัสผ่าน"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-slate-700 ml-1">ยืนยันรหัสผ่าน</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Lock size={18} className="text-slate-400" />
+              </div>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                placeholder="ยืนยันรหัสผ่าน"
               />
             </div>
           </div>

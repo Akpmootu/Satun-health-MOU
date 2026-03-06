@@ -16,12 +16,20 @@ interface IndicatorFormProps {
 const calculateScore = (result: number, criteria: any) => {
   if (!criteria) return null;
   
+  const parseCriteria = (val: any) => {
+    if (typeof val === 'number') return val;
+    if (!val) return NaN;
+    // Remove non-numeric chars except dot and minus
+    const str = String(val).replace(/[^0-9.-]/g, '');
+    return Number(str);
+  };
+
   const c = [
-    Number(criteria["1"]),
-    Number(criteria["2"]),
-    Number(criteria["3"]),
-    Number(criteria["4"]),
-    Number(criteria["5"])
+    parseCriteria(criteria["1"]),
+    parseCriteria(criteria["2"]),
+    parseCriteria(criteria["3"]),
+    parseCriteria(criteria["4"]),
+    parseCriteria(criteria["5"])
   ];
 
   if (c.some(isNaN)) return null;

@@ -218,7 +218,7 @@ export function NewsManagement() {
                       <span className="px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded-full">ปิดใช้งาน</span>
                     )}
                   </div>
-                  <p className="text-slate-600 text-sm line-clamp-2 mb-3">{item.body}</p>
+                  <p className="text-slate-600 text-sm line-clamp-2 mb-3">{item.body.replace(/\\n/g, '\n')}</p>
                   <p className="text-xs text-slate-400">
                     สร้างเมื่อ: {new Date(item.created_at).toLocaleString('th-TH')}
                   </p>

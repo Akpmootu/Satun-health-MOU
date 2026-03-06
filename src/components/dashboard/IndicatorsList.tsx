@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Indicator, AREAS, User, RESPONSIBLE_GROUPS } from '../../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Edit2, Search, Filter, Plus, CheckCircle2, XCircle, Clock, ArrowUpDown, Info, ChevronDown, ChevronUp, ShieldCheck, AlertCircle } from 'lucide-react';
+import { Edit2, Search, Filter, Plus, CheckCircle2, XCircle, Clock, ArrowUpDown, Info, ChevronDown, ChevronUp, ShieldCheck, AlertCircle, History } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import Swal from 'sweetalert2';
 
@@ -23,6 +23,8 @@ export function IndicatorsList({ data, fiscalYear, timeframe, onEdit, onVerify, 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedArea, setSelectedArea] = useState<string>('จังหวัด');
   const [statusFilter, setStatusFilter] = useState<string>('ทั้งหมด');
+  const [responsibleGroupFilter, setResponsibleGroupFilter] = useState<string>('ทั้งหมด');
+  const [scoreFilter, setScoreFilter] = useState<string>('ทั้งหมด');
   const [sortBy, setSortBy] = useState<SortOption>('order');
   const [showInfo, setShowInfo] = useState(false);
 
@@ -43,14 +45,38 @@ export function IndicatorsList({ data, fiscalYear, timeframe, onEdit, onVerify, 
       );
     }
 
-    // Filter by status
-    if (statusFilter !== 'ทั้งหมด') {
-      result = result.filter(d => {
-        const res = d.results[timeframe]?.[selectedArea];
-        const status = res?.status || 'รอประเมิน';
-        return status === statusFilter;
-      });
+    // Filter by responsible group
+    if (responsibleGroupFilter !== 'ทั้งหมด') {
+      result = result.filter(d => 
+        d.responsible_group === responsibleGroupFilter || 
+        d.responsible_groups?.includes(responsibleGroupFilter)
+      );
     }
+
+    // Filter by status and score
+    result = result.filter(d => {
+      const res = d.results[timeframe]?.[selectedArea];
+      const status = res?.status || 'รอประเมิน';
+      const score = res?.score ?? 0;
+
+      // Status filter
+      if (statusFilter !== 'ทั้งหมด' && status !== statusFilter) {
+        return false;
+      }
+
+      // Score filter
+      if (scoreFilter !== 'ทั้งหมด') {
+        if (scoreFilter === '5' && score !== 5) return false;
+        if (scoreFilter === '4' && score !== 4) return false;
+        if (scoreFilter === '3' && score !== 3) return false;
+        if (scoreFilter === '2' && score !== 2) return false;
+        if (scoreFilter === '1' && score !== 1) return false;
+        if (scoreFilter === '<3' && score >= 3) return false;
+        if (scoreFilter === '>=3' && score < 3) return false;
+      }
+
+      return true;
+    });
 
     // Sort
     result.sort((a, b) => {
@@ -69,7 +95,7 @@ export function IndicatorsList({ data, fiscalYear, timeframe, onEdit, onVerify, 
     });
 
     return result;
-  }, [data, fiscalYear, timeframe, selectedArea, searchTerm, statusFilter, sortBy]);
+  }, [data, fiscalYear, timeframe, selectedArea, searchTerm, statusFilter, responsibleGroupFilter, scoreFilter, sortBy]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -91,24 +117,83 @@ export function IndicatorsList({ data, fiscalYear, timeframe, onEdit, onVerify, 
     }
   };
 
+  const getRowBackground = (status: string) => {
+    switch (status) {
+      case 'ผ่าน': return 'bg-emerald-50/30 hover:bg-emerald-50/60';
+      case 'ไม่ผ่าน': return 'bg-rose-50/30 hover:bg-rose-50/60';
+      case 'รอยืนยัน': return 'bg-indigo-50/30 hover:bg-indigo-50/60';
+      case 'แก้ไข': return 'bg-orange-50/30 hover:bg-orange-50/60';
+      default: return 'hover:bg-slate-50/80';
+    }
+  };
+
   const getExcellenceCategory = (order: string | number) => {
     const num = parseFloat(order.toString());
     if ([1, 2, 3, 4, 6, 9].includes(num)) {
-      return { name: 'PP Excellence', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' };
+      return { name: 'PP Excellence', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', description: 'ส่งเสริมสุขภาพ ป้องกันโรค และคุ้มครองผู้บริโภคเป็นเลิศ' };
     } else if ([7.1, 7.2, 8, 10, 11, 13, 15].includes(num)) {
-      return { name: 'Service Excellence', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' };
+      return { name: 'Service Excellence', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200', description: 'บริการเป็นเลิศ' };
     } else if ([12].includes(num)) {
-      return { name: 'People Excellence', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' };
+      return { name: 'People Excellence', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200', description: 'บุคลากรเป็นเลิศ' };
     } else if ([5, 14, 16, 17].includes(num)) {
-      return { name: 'Governance Excellence', color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200' };
+      return { name: 'Governance Excellence', color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-200', description: 'บริหารจัดการเป็นเลิศ' };
     }
-    return { name: 'ทั่วไป', color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200' };
+    return { name: 'ทั่วไป', color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200', description: '' };
   };
 
   const getScoreStyle = (score: number | null | undefined) => {
     if (score === null || score === undefined || isNaN(score)) return {};
-    const hue = Math.max(0, Math.min(120, (score - 1) * 30));
-    return { backgroundColor: `hsl(${hue}, 80%, 95%)`, color: `hsl(${hue}, 80%, 35%)`, borderColor: `hsl(${hue}, 80%, 85%)` };
+    if (score === 5) return { backgroundColor: '#10b981', color: 'white', borderColor: '#059669' }; // Emerald-500
+    if (score === 4) return { backgroundColor: '#34d399', color: 'white', borderColor: '#10b981' }; // Emerald-400
+    if (score === 3) return { backgroundColor: '#fbbf24', color: 'white', borderColor: '#f59e0b' }; // Amber-400
+    if (score === 2) return { backgroundColor: '#f87171', color: 'white', borderColor: '#ef4444' }; // Red-400
+    if (score === 1) return { backgroundColor: '#ef4444', color: 'white', borderColor: '#dc2626' }; // Red-500
+    return { backgroundColor: '#f1f5f9', color: '#64748b', borderColor: '#cbd5e1' };
+  };
+
+  const handleViewHistory = (item: Indicator) => {
+    const history = item.results[timeframe]?.[selectedArea]?.history || [];
+    
+    if (history.length === 0) {
+      Swal.fire({
+        title: 'ไม่พบประวัติการแก้ไข',
+        icon: 'info',
+        confirmButtonText: 'ตกลง',
+        confirmButtonColor: '#10b981'
+      });
+      return;
+    }
+
+    const historyHtml = history.map((h: any) => `
+      <div class="text-left border-b border-slate-100 py-3 last:border-0">
+        <div class="flex justify-between items-center mb-1">
+          <span class="font-semibold text-xs text-slate-500">${new Date(h.timestamp).toLocaleString('th-TH')}</span>
+          <span class="text-xs px-2 py-0.5 rounded-full ${
+            h.status === 'ผ่าน' ? 'bg-emerald-100 text-emerald-700' :
+            h.status === 'ไม่ผ่าน' ? 'bg-rose-100 text-rose-700' :
+            h.status === 'รอยืนยัน' ? 'bg-indigo-100 text-indigo-700' :
+            h.status === 'แก้ไข' ? 'bg-orange-100 text-orange-700' :
+            'bg-slate-100 text-slate-700'
+          }">${h.status}</span>
+        </div>
+        <div class="text-sm text-slate-700">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="font-medium text-slate-900">ผู้ดำเนินการ:</span> ${h.user}
+          </div>
+          ${h.score !== undefined && h.score !== null ? `<div class="mb-1"><span class="font-medium text-slate-900">คะแนน:</span> ${h.score}</div>` : ''}
+          ${h.result_percentage ? `<div class="mb-1"><span class="font-medium text-slate-900">ผลงาน:</span> ${h.result_percentage}%</div>` : ''}
+          ${h.feedback ? `<div class="bg-slate-50 p-2 rounded text-slate-600 mt-1"><span class="font-medium text-slate-900">ข้อเสนอแนะ:</span> ${h.feedback}</div>` : ''}
+        </div>
+      </div>
+    `).join('');
+
+    Swal.fire({
+      title: 'ประวัติการดำเนินการ',
+      html: `<div class="max-h-[400px] overflow-y-auto px-1">${historyHtml}</div>`,
+      confirmButtonText: 'ปิด',
+      confirmButtonColor: '#64748b',
+      width: '500px'
+    });
   };
 
   return (
@@ -167,9 +252,9 @@ export function IndicatorsList({ data, fiscalYear, timeframe, onEdit, onVerify, 
                 <Info size={20} className="text-indigo-600" />
                 หมายเหตุ: ความหมายของ 4+1 Excellence
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* PP Excellence */}
-                <div className="bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-white/50 hover:shadow-md transition-shadow">
+                <div className="bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-emerald-100 hover:shadow-md transition-shadow">
                   <h4 className="font-bold text-emerald-700 mb-1 flex items-center gap-2">
                     <span className="bg-emerald-100 text-emerald-800 w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
                     PP Excellence
@@ -178,18 +263,10 @@ export function IndicatorsList({ data, fiscalYear, timeframe, onEdit, onVerify, 
                   <p className="text-slate-700 text-sm mb-3 italic bg-emerald-50/50 p-2 rounded-lg border border-emerald-100/50">
                     "เน้นการสร้างเสริมสุขภาพ การคัดกรองโรค และการจัดการปัจจัยเสี่ยง"
                   </p>
-                  <ul className="text-slate-600 text-sm space-y-1.5 list-none">
-                    <li className="flex gap-2"><span className="text-emerald-500 font-bold">(1)</span> <span>ร้อยละหญิงตั้งครรภ์ได้รับการฝากครรภ์ครั้งแรกก่อนหรือเท่ากับ 12 สัปดาห์</span></li>
-                    <li className="flex gap-2"><span className="text-emerald-500 font-bold">(2)</span> <span>ร้อยละเด็กอายุครบ 12 เดือนในเขตรับผิดชอบ มีภาวะโลหิตจาง</span></li>
-                    <li className="flex gap-2"><span className="text-emerald-500 font-bold">(3)</span> <span>ร้อยละของเด็กปฐมวัยมีพัฒนาการสมวัย</span></li>
-                    <li className="flex gap-2"><span className="text-emerald-500 font-bold">(4)</span> <span>อัตราเด็กอายุ 0 - 5 ปี ฟันดีไม่มีผุ (Cavity Free)</span></li>
-                    <li className="flex gap-2"><span className="text-emerald-500 font-bold">(6)</span> <span>ระดับความสำเร็จของการดำเนินงานอาหารปลอดภัยจังหวัด</span></li>
-                    <li className="flex gap-2"><span className="text-emerald-500 font-bold">(9)</span> <span>ร้อยละการคัดกรองวัณโรคโดยการ CXR ทรวงอกในกลุ่มเสี่ยง</span></li>
-                  </ul>
                 </div>
                 
                 {/* Service Excellence */}
-                <div className="bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-white/50 hover:shadow-md transition-shadow">
+                <div className="bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-blue-100 hover:shadow-md transition-shadow">
                   <h4 className="font-bold text-blue-700 mb-1 flex items-center gap-2">
                     <span className="bg-blue-100 text-blue-800 w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span>
                     Service Excellence
@@ -198,18 +275,10 @@ export function IndicatorsList({ data, fiscalYear, timeframe, onEdit, onVerify, 
                   <p className="text-slate-700 text-sm mb-3 italic bg-blue-50/50 p-2 rounded-lg border border-blue-100/50">
                     "เน้นคุณภาพการรักษาพยาบาล ระบบส่งต่อ ระบบบริการปฐมภูมิ และการแพทย์ทางเลือก"
                   </p>
-                  <ul className="text-slate-600 text-sm space-y-1.5 list-none">
-                    <li className="flex gap-2"><span className="text-blue-500 font-bold">(7.1, 7.2)</span> <span>ผู้ป่วยเบาหวานชนิดที่ 2 ที่เข้าเกณฑ์และเข้าสู่ระยะสงบ (DM remission)</span></li>
-                    <li className="flex gap-2"><span className="text-blue-500 font-bold">(8)</span> <span>ร้อยละของผู้ป่วยยาเสพติดเข้าสู่กระบวนการบำบัดรักษาฯ (Retention Rate)</span></li>
-                    <li className="flex gap-2"><span className="text-blue-500 font-bold">(10)</span> <span>อัตราความสำเร็จการรักษาผู้ป่วยวัณโรคปอดรายใหม่</span></li>
-                    <li className="flex gap-2"><span className="text-blue-500 font-bold">(11)</span> <span>ร้อยละของหน่วยบริการปฐมภูมิที่ผ่านเกณฑ์คุณภาพมาตรฐาน (พ.ร.บ. ปฐมภูมิฯ)</span></li>
-                    <li className="flex gap-2"><span className="text-blue-500 font-bold">(13)</span> <span>ร้อยละการให้บริการการแพทย์ทางไกล (Telemedicine) ใน รพ.สต.</span></li>
-                    <li className="flex gap-2"><span className="text-blue-500 font-bold">(15)</span> <span>มูลค่าการใช้ยาสมุนไพรในสิทธิ UC</span></li>
-                  </ul>
                 </div>
 
                 {/* People Excellence */}
-                <div className="bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-white/50 hover:shadow-md transition-shadow">
+                <div className="bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-amber-100 hover:shadow-md transition-shadow">
                   <h4 className="font-bold text-amber-700 mb-1 flex items-center gap-2">
                     <span className="bg-amber-100 text-amber-800 w-6 h-6 rounded-full flex items-center justify-center text-xs">3</span>
                     People Excellence
@@ -218,13 +287,10 @@ export function IndicatorsList({ data, fiscalYear, timeframe, onEdit, onVerify, 
                   <p className="text-slate-700 text-sm mb-3 italic bg-amber-50/50 p-2 rounded-lg border border-amber-100/50">
                     "เน้นการพัฒนาศักยภาพบุคลากรทางการแพทย์ และเครือข่ายสุขภาพภาคประชาชน"
                   </p>
-                  <ul className="text-slate-600 text-sm space-y-1.5 list-none">
-                    <li className="flex gap-2"><span className="text-amber-500 font-bold">(12)</span> <span>ร้อยละของ อสม. ได้รับการพัฒนายกระดับสู่ผู้ช่วยสาธารณสุข ปี 2569</span></li>
-                  </ul>
                 </div>
 
                 {/* Governance Excellence */}
-                <div className="bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-white/50 hover:shadow-md transition-shadow">
+                <div className="bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-purple-100 hover:shadow-md transition-shadow">
                   <h4 className="font-bold text-purple-700 mb-1 flex items-center gap-2">
                     <span className="bg-purple-100 text-purple-800 w-6 h-6 rounded-full flex items-center justify-center text-xs">4</span>
                     Governance Excellence
@@ -233,12 +299,32 @@ export function IndicatorsList({ data, fiscalYear, timeframe, onEdit, onVerify, 
                   <p className="text-slate-700 text-sm mb-3 italic bg-purple-50/50 p-2 rounded-lg border border-purple-100/50">
                     "เน้นการบริหารจัดการระบบข้อมูล สุขาภิบาลสิ่งแวดล้อม การเงินการคลัง และธรรมาภิบาล"
                   </p>
-                  <ul className="text-slate-600 text-sm space-y-1.5 list-none">
-                    <li className="flex gap-2"><span className="text-purple-500 font-bold">(5)</span> <span>การพัฒนาอนามัยสิ่งแวดล้อมตามเกณฑ์ GREEN & CLEAN Hospital Challenge / Sub-District</span></li>
-                    <li className="flex gap-2"><span className="text-purple-500 font-bold">(14)</span> <span>ระดับความสำเร็จของ คปสอ. ในการขับเคลื่อนงานสุขภาพดิจิทัล</span></li>
-                    <li className="flex gap-2"><span className="text-purple-500 font-bold">(16)</span> <span>ร้อยละของการเบิกจ่ายงบค่าเสื่อมของเครือข่ายโรงพยาบาล (ตัวชี้วัดผู้บริหาร)</span></li>
-                    <li className="flex gap-2"><span className="text-purple-500 font-bold">(17)</span> <span>ร้อยละของหน่วยงานในสังกัดผ่านการประเมินความโปร่งใส ITA (ตัวชี้วัดผู้บริหาร)</span></li>
-                  </ul>
+                </div>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-indigo-100">
+                <h3 className="text-slate-800 font-bold mb-3 text-sm">เกณฑ์การให้คะแนน (Scoring Criteria)</h3>
+                <div className="flex flex-wrap gap-2">
+                  <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
+                    <span className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold">5</span>
+                    <span className="text-xs text-slate-600">ดีเยี่ยม (Excellent)</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
+                    <span className="w-6 h-6 rounded-full bg-emerald-400 text-white flex items-center justify-center text-xs font-bold">4</span>
+                    <span className="text-xs text-slate-600">ดีมาก (Very Good)</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
+                    <span className="w-6 h-6 rounded-full bg-amber-400 text-white flex items-center justify-center text-xs font-bold">3</span>
+                    <span className="text-xs text-slate-600">ดี (Good) - ผ่านเกณฑ์</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
+                    <span className="w-6 h-6 rounded-full bg-red-400 text-white flex items-center justify-center text-xs font-bold">2</span>
+                    <span className="text-xs text-slate-600">พอใช้ (Fair) - ต่ำกว่าเกณฑ์</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
+                    <span className="w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center text-xs font-bold">1</span>
+                    <span className="text-xs text-slate-600">ปรับปรุง (Poor)</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -272,6 +358,38 @@ export function IndicatorsList({ data, fiscalYear, timeframe, onEdit, onVerify, 
                 {AREAS.map(area => (
                   <option key={area} value={area}>{area}</option>
                 ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5">
+              <span className="text-sm text-slate-500">กลุ่มงาน:</span>
+              <select 
+                value={responsibleGroupFilter}
+                onChange={(e) => setResponsibleGroupFilter(e.target.value)}
+                className="bg-transparent text-sm focus:outline-none cursor-pointer appearance-none pr-4 font-medium max-w-[150px] truncate"
+              >
+                <option value="ทั้งหมด">ทั้งหมด</option>
+                {RESPONSIBLE_GROUPS.map(group => (
+                  <option key={group.name} value={group.name}>{group.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5">
+              <span className="text-sm text-slate-500">คะแนน:</span>
+              <select 
+                value={scoreFilter}
+                onChange={(e) => setScoreFilter(e.target.value)}
+                className="bg-transparent text-sm focus:outline-none cursor-pointer appearance-none pr-4 font-medium"
+              >
+                <option value="ทั้งหมด">ทั้งหมด</option>
+                <option value="5">5 คะแนน</option>
+                <option value="4">4 คะแนน</option>
+                <option value="3">3 คะแนน</option>
+                <option value="2">2 คะแนน</option>
+                <option value="1">1 คะแนน</option>
+                <option value=">=3">ผ่านเกณฑ์ (≥3)</option>
+                <option value="<3">ต่ำกว่าเกณฑ์ (&lt;3)</option>
               </select>
             </div>
 
@@ -341,7 +459,7 @@ export function IndicatorsList({ data, fiscalYear, timeframe, onEdit, onVerify, 
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ duration: 0.2, delay: Math.min(index * 0.05, 0.5) }}
                         key={item.id} 
-                        className="hover:bg-slate-50/80 transition-colors group"
+                        className={cn("transition-colors group", getRowBackground(result.status))}
                       >
                         <td className="p-4 text-center font-medium text-slate-500">{item.order}</td>
                         <td className="p-4">
@@ -406,6 +524,14 @@ export function IndicatorsList({ data, fiscalYear, timeframe, onEdit, onVerify, 
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
                               </button>
                             )}
+                            <button 
+                              onClick={() => handleViewHistory(item)}
+                              className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              aria-label="ดูประวัติ"
+                              title="ดูประวัติ"
+                            >
+                              <History size={18} />
+                            </button>
                             {user?.role === 'admin' && onEditMaster && (
                               <button 
                                 onClick={() => onEditMaster(item)}

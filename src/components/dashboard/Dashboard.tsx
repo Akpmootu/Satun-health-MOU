@@ -184,6 +184,13 @@ export function Dashboard({ data, fiscalYear, timeframe }: DashboardProps) {
     </motion.div>
   );
 
+  // Calculate deadline
+  const deadline = new Date('2026-03-15');
+  const today = new Date();
+  const diffTime = deadline.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const isNearDeadline = diffDays > 0 && diffDays <= 15;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
@@ -202,6 +209,26 @@ export function Dashboard({ data, fiscalYear, timeframe }: DashboardProps) {
           </div>
         </div>
       </div>
+
+      {/* Deadline Notification Banner */}
+      {isNearDeadline && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3 shadow-sm"
+        >
+          <div className="bg-amber-100 p-2 rounded-full shrink-0">
+            <Clock size={20} className="text-amber-600" />
+          </div>
+          <div>
+            <h3 className="font-bold text-amber-800">แจ้งเตือนกำหนดส่งข้อมูล</h3>
+            <p className="text-amber-700 text-sm mt-1">
+              เหลือเวลาอีก <span className="font-bold text-amber-900 text-lg">{diffDays}</span> วัน จะปิดระบบรับข้อมูล (15 มีนาคม 2569)
+              กรุณาตรวจสอบและบันทึกข้อมูลให้เรียบร้อย
+            </p>
+          </div>
+        </motion.div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
