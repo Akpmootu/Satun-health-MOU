@@ -139,7 +139,6 @@ export function MasterIndicatorForm({ indicator, onClose, onSave }: MasterIndica
                         }
                       }));
                     }}
-                    required
                     step="0.01"
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all text-center"
                   />
