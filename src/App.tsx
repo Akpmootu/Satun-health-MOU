@@ -54,6 +54,7 @@ export default function App() {
         const formattedData: Indicator[] = indicators.map(item => ({
           ...item,
           order: item.order_num,
+          responsible_groups: item.responsible_group ? item.responsible_group.split(',').map((g: string) => g.trim()) : [],
         }));
         setData(formattedData);
       } else {
@@ -155,9 +156,10 @@ export default function App() {
         }
       });
 
-      const { order, ...rest } = indicator;
+      const { order, responsible_groups, ...rest } = indicator;
       const dbData = {
         ...rest,
+        responsible_group: responsible_groups && responsible_groups.length > 0 ? responsible_groups.join(',') : rest.responsible_group,
         order_num: String(order),
       };
 

@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Indicator, AREAS } from '../../types';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from 'recharts';
 import { motion } from 'motion/react';
-import { Target, CheckCircle2, XCircle, Clock, TrendingUp, Activity, AlertTriangle, Award } from 'lucide-react';
+import { Target, CheckCircle2, XCircle, Clock, TrendingUp, Activity, AlertTriangle, Award, PieChart as PieChartIcon } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 interface DashboardProps {
@@ -245,14 +245,14 @@ export function Dashboard({ data, fiscalYear, timeframe }: DashboardProps) {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.5 }}
-          className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 col-span-1 flex flex-col items-center justify-center relative"
+          className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 col-span-1 flex flex-col items-center justify-center relative min-w-0"
         >
           <h3 className="text-lg font-semibold text-slate-800 mb-2 w-full text-left flex items-center gap-2">
             <TrendingUp size={20} className="text-emerald-600" />
             อัตราความสำเร็จ (ระดับจังหวัด)
           </h3>
           <div className="h-48 w-full relative mt-4">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" debounce={50}>
               <PieChart>
                 <Pie
                   data={gaugeData}
@@ -317,7 +317,7 @@ export function Dashboard({ data, fiscalYear, timeframe }: DashboardProps) {
                     <div className="flex items-center gap-4 shrink-0">
                       {/* Mini Trend Chart */}
                       <div className="w-24 h-12 bg-white rounded border border-rose-100 p-1 hidden sm:block">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%" debounce={50}>
                           <LineChart data={trendData}>
                             <YAxis domain={[0, 100]} hide />
                             <Line type="monotone" dataKey="value" stroke="#f43f5e" strokeWidth={2} dot={{ r: 2, fill: '#f43f5e' }} isAnimationActive={false} />
@@ -355,14 +355,14 @@ export function Dashboard({ data, fiscalYear, timeframe }: DashboardProps) {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.7 }}
-          className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 col-span-1"
+          className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 col-span-1 min-w-0"
         >
           <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
-            <PieChart size={20} className="text-emerald-600" />
+            <PieChartIcon size={20} className="text-emerald-600" />
             สัดส่วนผลการประเมินรวม
           </h3>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" debounce={50}>
               <PieChart>
                 <Pie
                   data={pieData}
@@ -390,14 +390,14 @@ export function Dashboard({ data, fiscalYear, timeframe }: DashboardProps) {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.8 }}
-          className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 col-span-1 lg:col-span-2"
+          className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 col-span-1 lg:col-span-2 min-w-0"
         >
           <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
             <TrendingUp size={20} className="text-emerald-600" />
             คะแนนเฉลี่ยรายพื้นที่
           </h3>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" debounce={50}>
               <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
                 <PolarGrid stroke="#e2e8f0" />
                 <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 12 }} />
@@ -414,11 +414,11 @@ export function Dashboard({ data, fiscalYear, timeframe }: DashboardProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.9 }}
-          className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 col-span-1 lg:col-span-3"
+          className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 col-span-1 lg:col-span-3 min-w-0"
         >
           <h3 className="text-lg font-semibold text-slate-800 mb-4">จำนวนตัวชี้วัดที่ผ่าน/ไม่ผ่าน รายพื้นที่</h3>
           <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" debounce={50}>
               <BarChart data={barData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
