@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Indicator, AreaResult, AREAS, User } from '../../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Save, ChevronRight, CheckCircle2, AlertCircle, Clock, XCircle } from 'lucide-react';
+import { ArrowLeft, Save, ChevronRight, CheckCircle2, AlertCircle, Clock, XCircle, Award } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import Swal from 'sweetalert2';
 
@@ -236,6 +236,46 @@ export function IndicatorForm({ indicator, timeframe, onClose, onSave, user }: I
                       </span>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Scoring Criteria */}
+              <div className="bg-white rounded-2xl p-6 mb-8 border border-slate-200 shadow-sm">
+                <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                  <Award size={20} className="text-indigo-600" />
+                  เกณฑ์การให้คะแนน (Scoring Criteria)
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
+                  {[1, 2, 3, 4, 5].map((score) => {
+                    const criteriaValue = formData.score_criteria?.[score.toString() as keyof typeof formData.score_criteria];
+                    return (
+                      <div 
+                        key={score}
+                        className={cn(
+                          "relative p-4 rounded-xl border flex flex-col items-center text-center transition-all hover:shadow-md",
+                          score === 1 ? "bg-red-50 border-red-100 text-red-800" :
+                          score === 2 ? "bg-orange-50 border-orange-100 text-orange-800" :
+                          score === 3 ? "bg-yellow-50 border-yellow-100 text-yellow-800" :
+                          score === 4 ? "bg-lime-50 border-lime-100 text-lime-800" :
+                          "bg-emerald-50 border-emerald-100 text-emerald-800"
+                        )}
+                      >
+                        <div className={cn(
+                          "w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm mb-2 shadow-sm shrink-0",
+                          score === 1 ? "bg-red-100 text-red-600" :
+                          score === 2 ? "bg-orange-100 text-orange-600" :
+                          score === 3 ? "bg-yellow-100 text-yellow-600" :
+                          score === 4 ? "bg-lime-100 text-lime-600" :
+                          "bg-emerald-100 text-emerald-600"
+                        )}>
+                          {score}
+                        </div>
+                        <span className="text-sm font-medium break-words w-full">
+                          {criteriaValue || '-'}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
