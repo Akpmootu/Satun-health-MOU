@@ -1,0 +1,298 @@
+import { useState, useMemo } from 'react';
+import { Indicator, AREAS, User } from '../../types';
+import { motion, AnimatePresence } from 'motion/react';
+import { Search, ShieldCheck, CheckCircle2, XCircle, Clock, AlertCircle } from 'lucide-react';
+import { cn } from '../../lib/utils';
+import Swal from 'sweetalert2';
+import { useWorkGroups } from '../../hooks/useWorkGroups';
+
+interface VerifyDataListProps {
+  data: Indicator[];
+  timeframe: string;
+  onVerify: (indicator: Indicator, area: string, status: 'ผ่าน' | 'ไม่ผ่าน' | 'รอประเมิน' | 'รอยืนยัน' | 'แก้ไข', feedback?: string, deadline?: string, ppho_work_group?: string) => void;
+  user: User | null;
+}
+
+export function VerifyDataList({ data, timeframe, onVerify, user }: VerifyDataListProps) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const { workGroups } = useWorkGroups();
+
+  // Flatten data to get all pending verifications across all areas
+  const pendingItems = useMemo(() => {
+    const items: { indicator: Indicator; area: string; result: any }[] = [];
+    
+    data.forEach(indicator => {
+      // If user is 'กลุ่มงาน สสจ.', only show their assigned indicators
+      if (user?.role === 'กลุ่มงาน สสจ.' && indicator.responsible_group !== user.unit && !indicator.responsible_groups?.includes(user.unit)) {
+        return;
+      }
+
+      if (indicator.results[timeframe]) {
+        Object.keys(indicator.results[timeframe]).forEach(area => {
+          const result = indicator.results[timeframe][area];
+          if (result.status === 'รอยืนยัน') {
+            items.push({ indicator, area, result });
+          }
+        });
+      }
+    });
+
+    // Filter by search term
+    if (searchTerm) {
+      return items.filter(item => 
+        item.indicator.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        item.area.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    return items;
+  }, [data, timeframe, searchTerm]);
+
+  const handleVerifyClick = async (item: { indicator: Indicator; area: string; result: any }) => {
+    const newStatus = (item.result.score ?? 0) >= 3 ? 'ผ่าน' : 'ไม่ผ่าน';
+    
+    // Generate history HTML
+    let historyHtml = '';
+    if (item.result.history && item.result.history.length > 0) {
+      historyHtml = `
+        <div class="mt-4 pt-4 border-t border-slate-100">
+          <h5 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            ประวัติการบันทึก
+          </h5>
+          <div class="space-y-3 max-h-40 overflow-y-auto pr-2 text-left">
+            ${item.result.history.map((hist: any) => `
+              <div class="flex gap-3 text-sm">
+                <div class="w-2 h-2 mt-1.5 rounded-full shrink-0 ${
+                  hist.status === 'ผ่าน' ? 'bg-emerald-500' : 
+                  hist.status === 'ไม่ผ่าน' ? 'bg-rose-500' : 
+                  hist.status === 'แก้ไข' ? 'bg-orange-500' : 'bg-indigo-500'
+                }"></div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="font-medium text-slate-700">${hist.status}</span>
+                    <span class="text-xs text-slate-400">${new Date(hist.timestamp).toLocaleString('th-TH')}</span>
+                  </div>
+                  <div class="text-xs text-slate-500 mt-0.5">โดย: ${hist.user}</div>
+                  ${hist.feedback ? `<div class="text-xs text-orange-600 bg-orange-50 p-1.5 mt-1 rounded border border-orange-100">ข้อเสนอแนะ: ${hist.feedback}</div>` : ''}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    const swalResult = await Swal.fire({
+      title: '<h2 class="text-2xl font-bold text-slate-800 flex items-center justify-center gap-3"><i class="fa-solid fa-shield-halved text-indigo-600"></i> ตรวจสอบข้อมูล</h2>',
+      width: '600px',
+      html: `
+        <div class="text-left mb-4 space-y-3">
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+            <p class="text-xs text-slate-500 mb-1 uppercase tracking-wider font-semibold">ตัวชี้วัด</p>
+            <p class="text-sm text-slate-800 font-medium leading-relaxed">${item.indicator.name}</p>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-indigo-50 p-3 rounded-xl border border-indigo-100">
+              <p class="text-xs text-indigo-500 mb-1 uppercase tracking-wider font-semibold">หน่วยงาน</p>
+              <p class="text-sm text-indigo-900 font-bold">${item.area}</p>
+            </div>
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+              <p class="text-xs text-slate-500 mb-1 uppercase tracking-wider font-semibold">สถานะหากยืนยัน</p>
+              <p class="text-sm font-bold ${newStatus === 'ผ่าน' ? 'text-emerald-600' : 'text-rose-600'}">${newStatus}</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+              <p class="text-xs text-slate-500 mb-1 uppercase tracking-wider font-semibold">ผลงาน (%)</p>
+              <p class="text-lg text-slate-800 font-bold">${item.result.result_percentage ?? '-'}</p>
+            </div>
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+              <p class="text-xs text-slate-500 mb-1 uppercase tracking-wider font-semibold">คะแนน</p>
+              <p class="text-lg text-slate-800 font-bold">${item.result.score ?? '-'}</p>
+            </div>
+          </div>
+
+          ${item.result.notes ? `
+          <div class="bg-amber-50 p-3 rounded-xl border border-amber-100">
+            <p class="text-xs text-amber-600 mb-1 uppercase tracking-wider font-semibold flex items-center gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/><line x1="9" x2="15" y1="9" y2="9"/><line x1="9" x2="15" y1="13" y2="13"/><line x1="9" x2="11" y1="17" y2="17"/></svg>
+              หมายเหตุจากผู้ส่งข้อมูล
+            </p>
+            <p class="text-sm text-amber-900 whitespace-pre-wrap mt-1">${item.result.notes}</p>
+          </div>
+          ` : ''}
+        </div>
+        ${historyHtml}
+      `,
+      icon: 'question',
+      showCancelButton: true,
+      showDenyButton: true,
+      confirmButtonColor: '#10b981',
+      denyButtonColor: '#f59e0b', // Orange for edit
+      cancelButtonColor: '#94a3b8',
+      confirmButtonText: 'ยืนยันข้อมูล',
+      denyButtonText: 'ส่งกลับแก้ไข',
+      cancelButtonText: 'ยกเลิก'
+    });
+
+    if (swalResult.isConfirmed) {
+      onVerify(item.indicator, item.area, newStatus);
+      Swal.fire('ยืนยันสำเร็จ!', 'ข้อมูลได้รับการยืนยันและนำไปคำนวณในแดชบอร์ดแล้ว', 'success');
+    } else if (swalResult.isDenied) {
+      const { value: formValues } = await Swal.fire({
+        title: '<h2 class="text-2xl font-bold text-slate-800 flex items-center justify-center gap-3"><i class="fa-solid fa-comment-dots text-amber-600"></i> ระบุเหตุผลการส่งกลับแก้ไข</h2>',
+        html: `
+          <div class="space-y-4 text-left">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">ข้อเสนอแนะ/คำแนะนำสำหรับผู้ลงข้อมูล <span class="text-red-500">*</span></label>
+              <textarea id="swal-input-feedback" class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" rows="3" placeholder="พิมพ์ข้อเสนอแนะที่นี่..."></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">กำหนดเวลาแก้ไข (ไม่บังคับ)</label>
+              <input type="datetime-local" id="swal-input-deadline" class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
+            </div>
+          </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'ส่งกลับแก้ไข',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#f59e0b',
+        preConfirm: () => {
+          const feedback = (document.getElementById('swal-input-feedback') as HTMLTextAreaElement).value;
+          const deadline = (document.getElementById('swal-input-deadline') as HTMLInputElement).value;
+          if (!feedback) {
+            Swal.showValidationMessage('กรุณาระบุเหตุผลที่ต้องการให้แก้ไข');
+            return false;
+          }
+          return { feedback, deadline };
+        }
+      });
+
+      if (formValues) {
+        onVerify(item.indicator, item.area, 'แก้ไข', formValues.feedback, formValues.deadline, user?.unit || 'กลุ่มงาน สสจ.');
+        Swal.fire('ส่งกลับแก้ไขสำเร็จ!', 'ข้อมูลถูกส่งกลับไปยังผู้ลงข้อมูลเพื่อแก้ไขแล้ว', 'success');
+      }
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
+            <i className="fa-solid fa-shield-check text-indigo-600"></i>
+            ตรวจสอบข้อมูล
+          </h2>
+          <p className="text-slate-500 mt-1">รายการข้อมูลที่รอการยืนยันจากผู้ดูแลระบบ</p>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        {/* Toolbar */}
+        <div className="p-4 border-b border-slate-100 bg-slate-50/50">
+          <div className="relative w-full lg:w-96">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input 
+              type="text" 
+              placeholder="ค้นหาตัวชี้วัด หรือ หน่วยงาน..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+            />
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-sm font-semibold">
+                <th className="p-4 w-16 text-center">ลำดับ</th>
+                <th className="p-4 min-w-[300px]">ตัวชี้วัด MOU</th>
+                <th className="p-4 w-40 text-center">หน่วยงาน</th>
+                <th className="p-4 w-32 text-center">ผลงาน (%)</th>
+                <th className="p-4 w-24 text-center">คะแนน</th>
+                <th className="p-4 w-32 text-center">สถานะ</th>
+                <th className="p-4 w-24 text-center">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody className="text-sm divide-y divide-slate-100">
+              <AnimatePresence>
+                {pendingItems.length > 0 ? (
+                  pendingItems.map((item, index) => (
+                    <motion.tr 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.2, delay: Math.min(index * 0.05, 0.5) }}
+                      key={`${item.indicator.id}-${item.area}`} 
+                      className="hover:bg-slate-50/80 transition-colors group"
+                    >
+                      <td className="p-4 text-center font-medium text-slate-500">{item.indicator.order}</td>
+                      <td className="p-4">
+                        <p className="text-slate-800 font-medium line-clamp-2 group-hover:line-clamp-none transition-all">{item.indicator.name}</p>
+                        <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                          {item.indicator.responsible_groups?.map(group => {
+                            const groupInfo = workGroups.find(g => g.name === group);
+                            return (
+                              <span key={group} className={cn("text-xs font-semibold px-2 py-0.5 rounded-md border", groupInfo?.color || "bg-slate-100 text-slate-700 border-slate-200")}>
+                                {group}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </td>
+                      <td className="p-4 text-center font-medium text-indigo-600">{item.area}</td>
+                      <td className="p-4 text-center font-medium text-slate-700">{item.result.result_percentage ?? '-'}</td>
+                      <td className="p-4 text-center">
+                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-700 font-bold border border-slate-200">
+                          {item.result.score ?? '-'}
+                        </span>
+                      </td>
+                      <td className="p-4 text-center">
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium bg-indigo-50 text-indigo-700 border-indigo-200">
+                          <ShieldCheck size={16} />
+                          <span>{item.result.status}</span>
+                        </div>
+                      </td>
+                      <td className="p-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          {user?.role !== 'ผู้บริหาร' ? (
+                            <button 
+                              onClick={() => handleVerifyClick(item)}
+                              className="px-3 py-1.5 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors text-xs font-medium shadow-sm shadow-indigo-600/20 flex items-center gap-1"
+                            >
+                              <ShieldCheck size={14} />
+                              ตรวจสอบ
+                            </button>
+                          ) : (
+                            <span className="text-xs text-slate-400">-</span>
+                          )}
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-slate-500">
+                      <div className="flex flex-col items-center justify-center gap-3">
+                        <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center">
+                          <CheckCircle2 size={32} className="text-emerald-400" />
+                        </div>
+                        <p className="text-lg font-medium text-slate-600">ไม่มีข้อมูลรอการยืนยัน</p>
+                        <p className="text-sm text-slate-400">ข้อมูลทั้งหมดได้รับการตรวจสอบแล้ว</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </AnimatePresence>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
